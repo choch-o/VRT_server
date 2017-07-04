@@ -4,8 +4,14 @@ var express = require('express')
 var port = 3000
 var app = express()
 var router = require('./router/router')(app)
+var upload = require('express-fileupload')
+var bodyParser = require('body-parser')
 
-// app.use(express.urlencoded());
+app.use(upload())
+app.use(bodyParser.urlencoded({
+  extended: true
+}))
+app.use(bodyParser.json())
 app.set('views', __dirname + '/views')
 app.set('view engine', 'ejs')
 app.engine('html', require('ejs').renderFile)
