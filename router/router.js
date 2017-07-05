@@ -63,14 +63,6 @@ module.exports = function(app)
   });
 
   app.get('/videos/:videoName', function(req, res) {
-    // console.log("downloading video: ", req.params.videoName);
-    // var writeStream = fs.createReadStream(__dirname + '/../static/videos/' + req.params.videoName);
-    // writeStream.filename = req.params.videoName;
-    // writeStream.pipe(res);
-    //
-    // writeStream.on('finish', function() {
-    //   writeStream.end();
-    // });
     var file = __dirname + '/../static/videos/' + req.params.videoName;
 
     var filename = path.basename(file);
