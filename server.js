@@ -16,6 +16,8 @@ app.set('views', __dirname + '/views')
 app.set('view engine', 'ejs')
 app.engine('html', require('ejs').renderFile)
 
+app.use('/videos', express.static(__dirname + '/static/videos'))
+
 http.createServer(app).listen(port, function() {
 	console.log('http server listening on port ' + port)
 })

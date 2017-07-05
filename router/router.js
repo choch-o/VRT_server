@@ -1,5 +1,8 @@
 var multiparty = require('multiparty')
 var fs = require('fs')
+var glob = require('glob')
+var path = require('path')
+var mime = require('mime')
 
 module.exports = function(app)
 {
@@ -26,29 +29,57 @@ module.exports = function(app)
       }
 
       console.log("Write Streaming file :" + filename);
-      var writeStream = fs.createWriteStream(__dirname + '/../uploads/' + filename);
+      var writeStream = fs.createWriteStream(__dirname + '/../static/videos/' + filename);
       writeStream.filename = filename;
       part.pipe(writeStream);
-      part.on('data', function(chunk){
+      part.on('data', function(chunk) {
         console.log(filename + ' read ' + chunk.length + 'bytes');
       });
 
-      part.on('end', function(){
+      part.on('end', function() {
         console.log(filename + ' Part read complete');
         writeStream.end();
       });
     });
 
     // all uploads are completed
-    form.on('close',function(){
+    form.on('close', function() {
       res.status(200).send('Upload complete');
     });
 
     // track progress
-    form.on('progress',function(byteRead,byteExpected){
-      console.log(' Reading total  '+byteRead+'/'+byteExpected);
+    form.on('progress', function(byteRead,byteExpected) {
+      console.log(' Reading total  ' + byteRead + '/' + byteExpected);
     });
 
     form.parse(req);
+  });
+
+  app.get('/videos', function(req, res) {
+    glob('static/videos/*.mp4', function(err, files) {
+      console.log('files: ', files);
+      res.send(files);
+    });
+  });
+
+  app.get('/videos/:videoName', function(req, res) {
+    // console.log("downloading video: ", req.params.videoName);
+    // var writeStream = fs.createReadStream(__dirname + '/../static/videos/' + req.params.videoName);
+    // writeStream.filename = req.params.videoName;
+    // writeStream.pipe(res);
+    //
+    // writeStream.on('finish', function() {
+    //   writeStream.end();
+    // });
+    var file = __dirname + '/../static/videos/' + req.params.videoName;
+
+    var filename = path.basename(file);
+    var mimetype = mime.lookup(file);
+
+    res.setHeader('Content-disposition', 'attachment; filename=' + filename);
+    res.setHeader('Content-type', mimetype);
+
+    var filestream = fs.createReadStream(file);
+    filestream.pipe(res);
   })
 }
