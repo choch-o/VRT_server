@@ -3,8 +3,9 @@ var fs = require('fs')
 var glob = require('glob')
 var path = require('path')
 var mime = require('mime')
+var VideoInfo = require('./../models/videoInfo')
 
-module.exports = function(app)
+module.exports = function(app, io)
 {
   app.get('/', function(req, res) {
     res.render('index.html')
@@ -74,4 +75,42 @@ module.exports = function(app)
     var filestream = fs.createReadStream(file);
     filestream.pipe(res);
   })
+
+  app.post('/new_emoji_feedback/:videoName', function(req, res) {
+    let content = '';
+
+    req.on('data', function(data) {
+      content += data;
+    });
+
+    req.on('end', function() {
+      let data = JSON.parse(content);
+      VideoInfo.findOne({ name: req.params.videoName }, function(err, videoInfo) {
+        newEmoji = {
+          startTime: data.startTime,
+          emoji: data.emoji
+        };
+        videoInfo.emojiFeedback.push(newEmoji);
+        videoInfo.save(function(err) {
+          if (err) res.status(500).json({ error: 'failed to update emoji feedback' });
+          res.json({ message: 'emoji feedback updated' });
+        });
+      });
+    });
+  });
+
+  app.post('/new_feedback/:videoName', function(req, res) {
+    VideoInfo.findOne({ name: req.params.videoName }, function(err, videoInfo) {
+      newFeedback = {
+        startTime: req.body.startTime,
+        endTime: req.body.endTime,
+        feedback: req.body.feedback
+      };
+      videoInfo.feedback.push(newFeedback);
+      videoInfo.save(function(err) {
+        if (err) res.status(500).json({ error: 'failed to update feedback' });
+        res.json({ message: 'feedback updated' });
+      });
+    });
+  });
 }
