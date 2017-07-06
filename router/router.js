@@ -39,6 +39,18 @@ module.exports = function(app, io)
 
       part.on('end', function() {
         console.log(filename + ' Part read complete');
+        let videoInfo = new VideoInfo();
+        videoInfo.name = filename;
+        videoInfo.feedback = [];
+        videoInfo.emojiFeedback = [];
+        videoInfo.save(function(err) {
+          if (err) {
+            console.error(err);
+            res.send({ result: 0 });
+            return;
+          }
+          res.send({ result: 1 });
+        });
         writeStream.end();
       });
     });
