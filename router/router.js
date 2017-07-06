@@ -107,23 +107,51 @@ module.exports = function(app, io)
         videoInfo.save(function(err) {
           if (err) res.status(500).json({ error: 'failed to update emoji feedback' });
           res.json({ message: 'emoji feedback updated' });
+          io.emit('emoji feedback addition', newEmoji);
         });
       });
     });
   });
 
   app.post('/new_feedback/:videoName', function(req, res) {
-    VideoInfo.findOne({ name: req.params.videoName }, function(err, videoInfo) {
-      newFeedback = {
-        startTime: req.body.startTime,
-        endTime: req.body.endTime,
-        feedback: req.body.feedback
-      };
-      videoInfo.feedback.push(newFeedback);
-      videoInfo.save(function(err) {
-        if (err) res.status(500).json({ error: 'failed to update feedback' });
-        res.json({ message: 'feedback updated' });
+    console.log('new feedback arrived!');
+    let content = '';
+
+    req.on('data', function(data) {
+      content += data;
+    });
+
+    req.on('end', function() {
+      let data = JSON.parse(content);
+      VideoInfo.findOne({ name: req.params.videoName }, function(err, videoInfo) {
+        newFeedback = {
+          startTime: data.startTime,
+          endTime: data.endTime,
+          feedback: data.feedback
+        };
+        videoInfo.feedback.push(newFeedback);
+        videoInfo.save(function(err) {
+          if (err) res.status(500).json({ error: 'failed to update feedback' });
+          res.json({ message: 'feedback updated' });
+          io.emit('feedback addition', newFeedback);
+        });
       });
+    });
+  });
+
+  app.get('/get_emoji_feedback/:videoName', function(req, res) {
+    console.log('emoji feedback request!');
+    VideoInfo.findOne({ name: req.params.videoName }, function(err, videoInfo) {
+      let emojiFeedback = videoInfo.emojiFeedback;
+      res.json({ emojiFeedback : emojiFeedback });
+    });
+  });
+
+  app.get('/get_feedback/:videoName', function(req, res) {
+    console.log('feedback request!');
+    VideoInfo.findOne({ name: req.params.videoName }, function(err, videoInfo) {
+      let feedback = videoInfo.feedback;
+      res.json({ feedback : feedback });
     });
   });
 }
