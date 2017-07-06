@@ -44,12 +44,12 @@ module.exports = function(app, io)
         videoInfo.feedback = [];
         videoInfo.emojiFeedback = [];
         videoInfo.save(function(err) {
-          if (err) {
-            console.error(err);
-            res.send({ result: 0 });
-            return;
-          }
-          res.send({ result: 1 });
+          // if (err) {
+          //   console.error(err);
+          //   res.send({ result: 0 });
+          //   return;
+          // }
+          // res.send({ result: 1 });
         });
         writeStream.end();
       });
