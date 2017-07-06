@@ -77,6 +77,7 @@ module.exports = function(app, io)
   })
 
   app.post('/new_emoji_feedback/:videoName', function(req, res) {
+    console.log('new emoji feedback arrived!');
     let content = '';
 
     req.on('data', function(data) {

@@ -3,7 +3,9 @@ var express = require('express')
 
 var port = 3000
 var app = express()
-var router = require('./router/router')(app)
+var server = http.createServer(app)
+var io = require('socket.io')(server)
+var router = require('./router/router')(app, io)
 var upload = require('express-fileupload')
 var bodyParser = require('body-parser')
 var mongoose = require('mongoose')
@@ -14,7 +16,7 @@ db.once('open', function() {
   console.log('connected to mongod server')
 })
 
-mongoose.connect('mongodb://192.168.1.123/reaction_tagging')
+mongoose.connect('mongodb://192.168.1.126/reaction_tagging')
 
 app.use(upload())
 app.use(bodyParser.urlencoded({
@@ -27,12 +29,10 @@ app.engine('html', require('ejs').renderFile)
 
 app.use('/videos', express.static(__dirname + '/static/videos'))
 
-var httpServer = http.createServer(app).listen(port, function() {
+server.listen(port, function() {
 	console.log('http server listening on port ' + port)
 })
 
-var io = require('socket.io').listen(httpServer);
-
-io.sockets.on('connection', function(socket) {
+io.on('connection', function(socket) {
   socket.emit('connected', 'Hello, client!')
 })
