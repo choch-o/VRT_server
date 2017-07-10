@@ -39,7 +39,7 @@ module.exports = function(app, io)
 
       part.on('end', function() {
         console.log(filename + ' Part read complete');
-        let videoInfo = new VideoInfo();
+        var videoInfo = new VideoInfo();
         videoInfo.name = filename;
         videoInfo.feedback = [];
         videoInfo.emojiFeedback = [];
@@ -102,14 +102,14 @@ module.exports = function(app, io)
 
   app.post('/new_emoji_feedback/:videoName', function(req, res) {
     console.log('new emoji feedback arrived!');
-    let content = '';
+    var content = '';
 
     req.on('data', function(data) {
       content += data;
     });
 
     req.on('end', function() {
-      let data = JSON.parse(content);
+      var data = JSON.parse(content);
       VideoInfo.findOne({ name: req.params.videoName }, function(err, videoInfo) {
         newEmoji = {
           startTime: data.startTime,
@@ -127,14 +127,14 @@ module.exports = function(app, io)
 
   app.post('/new_feedback/:videoName', function(req, res) {
     console.log('new feedback arrived!');
-    let content = '';
+    var content = '';
 
     req.on('data', function(data) {
       content += data;
     });
 
     req.on('end', function() {
-      let data = JSON.parse(content);
+      var data = JSON.parse(content);
       VideoInfo.findOne({ name: req.params.videoName }, function(err, videoInfo) {
         newFeedback = {
           startTime: data.startTime,
@@ -154,7 +154,7 @@ module.exports = function(app, io)
   app.get('/get_emoji_feedback/:videoName', function(req, res) {
     console.log('emoji feedback request!');
     VideoInfo.findOne({ name: req.params.videoName }, function(err, videoInfo) {
-      let emojiFeedback = videoInfo.emojiFeedback;
+      var emojiFeedback = videoInfo.emojiFeedback;
       res.json({ emojiFeedback : emojiFeedback });
     });
   });
@@ -162,7 +162,7 @@ module.exports = function(app, io)
   app.get('/get_feedback/:videoName', function(req, res) {
     console.log('feedback request!');
     VideoInfo.findOne({ name: req.params.videoName }, function(err, videoInfo) {
-      let feedback = videoInfo.feedback;
+      var feedback = videoInfo.feedback;
       res.json({ feedback : feedback });
     });
   });
