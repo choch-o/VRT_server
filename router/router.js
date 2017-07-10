@@ -69,7 +69,7 @@ module.exports = function(app, io)
   });
 
   app.get('/videos', function(req, res) {
-    glob('static/videos/*.mp4', function(err, files) {
+    glob('static/videos/*', function(err, files) {
       console.log('files: ', files);
       res.send(files);
     });
@@ -78,6 +78,18 @@ module.exports = function(app, io)
   app.get('/videos/:videoName', function(req, res) {
     var file = __dirname + '/../static/videos/' + req.params.videoName;
 
+    var filename = path.basename(file);
+    var mimetype = mime.lookup(file);
+
+    res.setHeader('Content-disposition', 'attachment; filename=' + filename);
+    res.setHeader('Content-type', mimetype);
+
+    var filestream = fs.createReadStream(file);
+    filestream.pipe(res);
+  })
+
+  app.get('/prototype_apk', function(req, res) {
+    var file = __dirname + '/../static/HYFBABP.apk';
     var filename = path.basename(file);
     var mimetype = mime.lookup(file);
 
