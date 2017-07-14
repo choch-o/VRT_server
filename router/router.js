@@ -4,11 +4,21 @@ var glob = require('glob')
 var path = require('path')
 var mime = require('mime')
 var VideoInfo = require('./../models/videoInfo')
+var UserInfo = require('./../models/userInfo')
 
 module.exports = function(app, io)
 {
   app.get('/', function(req, res) {
-    res.render('index.html')
+    console.log('homepage access!');
+    res.render('index.html');
+  })
+
+  app.get('/index.js', function(req, res) {
+    res.sendFile(path.join(__dirname, '..', 'javascript/index.js'));
+  })
+
+  app.get('/feedback.js', function(req, res) {
+    res.sendFile(path.join(__dirname, '..', 'javascript/feedback.js'));
   })
 
   app.post('/', function(req, res) {
@@ -79,13 +89,44 @@ module.exports = function(app, io)
     var file = __dirname + '/../static/videos/' + req.params.videoName;
 
     var filename = path.basename(file);
+    var stat = fs.statSync(file);
     var mimetype = mime.lookup(file);
 
-    res.setHeader('Content-disposition', 'attachment; filename=' + filename);
-    res.setHeader('Content-type', mimetype);
+    console.log(req.headers['range']);
 
+    var responseHeaders = {};
+    var rangeRequest = readRangeHeader(req.headers['range'], stat.size);
     var filestream = fs.createReadStream(file);
-    filestream.pipe(res);
+
+    if (rangeRequest == null) {
+      responseHeaders['Content-Type'] = mimetype;
+      responseHeaders['Content-Length'] = stat.size;
+      responseHeaders['Accept-Ranges'] = 'bytes';
+
+      // res.setHeader('Content-disposition', 'attachment; filename=' + filename);
+      res.setHeader('Content-Type', mimetype);
+      res.setHeader('Content-Length', stat.size);
+      res.setHeader('Accept-Ranges', 'bytes');
+      filestream.pipe(res);
+    } else {
+      var start = rangeRequest.Start;
+      var end = rangeRequest.End;
+
+      if (start >= stat.size || end >= stat.size) {
+        res.setHeader('Content-Range', 'bytes */' + stat.size);
+        res.status(416);
+        res.end();
+      } else {
+        res.setHeader('Content-Range', 'bytes ' + start + '-' + end + '/' + stat.size);
+        res.setHeader('Content-Length', start == end ? 0 : (end - start + 1));
+        res.setHeader('Content-Type', mimetype);
+        res.setHeader('Accept-Ranges', 'bytes');
+        res.setHeader('Cache-Control', 'no-cache');
+
+        res.status(206);
+        filestream.pipe(res);
+      }
+    }
   })
 
   app.get('/prototype_apk', function(req, res) {
@@ -112,9 +153,11 @@ module.exports = function(app, io)
       var data = JSON.parse(content);
       VideoInfo.findOne({ name: req.params.videoName }, function(err, videoInfo) {
         newEmoji = {
+          userId: data.userId,
           startTime: data.startTime,
           emoji: data.emoji
         };
+        console.log(newEmoji);
         videoInfo.emojiFeedback.push(newEmoji);
         videoInfo.save(function(err) {
           if (err) res.status(500).json({ error: 'failed to update emoji feedback' });
@@ -137,10 +180,12 @@ module.exports = function(app, io)
       var data = JSON.parse(content);
       VideoInfo.findOne({ name: req.params.videoName }, function(err, videoInfo) {
         newFeedback = {
+          userId: data.userId,
           startTime: data.startTime,
           endTime: data.endTime,
           feedback: data.feedback
         };
+        console.log(newFeedback);
         videoInfo.feedback.push(newFeedback);
         videoInfo.save(function(err) {
           if (err) res.status(500).json({ error: 'failed to update feedback' });
@@ -166,4 +211,128 @@ module.exports = function(app, io)
       res.json({ feedback : feedback });
     });
   });
+
+  app.get('/check_duplicate_id/:userId', function(req, res) {
+    console.log('check duplicate id request!');
+    UserInfo.find({ userId: req.params.userId }, function(err, userInfos) {
+      console.log(userInfos);
+      if (err) console.log(err);
+      if (userInfos.length === 0) res.json({ duplicated: false });
+      else res.json({ duplicated: true });
+    });
+  });
+
+  app.post('/new_user', function(req, res) {
+    console.log('new user request!');
+    var content = '';
+
+    req.on('data', function(data) {
+      content += data;
+    });
+
+    req.on('end', function() {
+      var data = JSON.parse(content);
+      console.log(data);
+      var newUserInfo = new UserInfo();
+      newUserInfo.userId = data.userId;
+      newUserInfo.userPw = data.userPw;
+      console.log(newUserInfo);
+      newUserInfo.save(function(err) {
+          console.log('new user save succeed!');
+          if (err) res.status(500).json({ error: 'failed to save new user' });
+          res.json({ result: 'success' });
+      });
+    });
+  });
+
+  app.post('/try_login', function(req, res) {
+    console.log('new user request!');
+    var content = '';
+
+    req.on('data', function(data) {
+      content += data;
+    });
+
+    req.on('end', function() {
+      var data = JSON.parse(content);
+      console.log(data);
+      UserInfo.find({ userId: data.userId, userPw: data.userPw }, function(err, userInfos) {
+        if (userInfos.length === 0) res.json({ success: false });
+        else res.json({ success: true });
+      });
+    });
+  });
+
+  app.post('/delete_feedback', function(req, res) {
+    console.log('new delete feedback request!');
+    var content = '';
+
+    req.on('data', function(data) {
+      content += data;
+    });
+
+    req.on('end', function() {
+      var data = JSON.parse(content);
+      console.log(data);
+      VideoInfo.findOne({ name: data.videoName }, function(err, videoInfo) {
+        var feedbackList = videoInfo.feedback;
+        console.log('feedback list');
+        for (var i = 0; i < feedbackList.length; i++) {
+          console.log(feedbackList[i]);
+          console.log(feedbackList[i].userId === data.userId,
+            feedbackList[i].startTime === data.startTime,
+            feedbackList[i].endTime === data.endTime,
+            feedbackList[i].feedback === data.feedback);
+          if (feedbackList[i].userId === data.userId
+            && feedbackList[i].startTime === data.startTime
+            && feedbackList[i].endTime === data.endTime
+            && feedbackList[i].feedback === data.feedback)
+            videoInfo.feedback.splice(i, 1);
+        }
+        videoInfo.save(function(err) {
+          if (err) res.status(500).json({ success: false });
+          res.json({ success: true });
+        });
+      });
+    });
+  });
+
+  app.get('/feedback/:videoName', function(req, res) {
+    res.render('feedback', { videoName: req.params.videoName });
+  });
+}
+
+function readRangeHeader(range, totalLength) {
+        /*
+         * Example of the method 'split' with regular expression.
+         *
+         * Input: bytes=100-200
+         * Output: [null, 100, 200, null]
+         *
+         * Input: bytes=-200
+         * Output: [null, null, 200, null]
+         */
+
+    if (range == null || range.length == 0)
+        return null;
+
+    var array = range.split(/bytes=([0-9]*)-([0-9]*)/);
+    var start = parseInt(array[1]);
+    var end = parseInt(array[2]);
+    var result = {
+        Start: isNaN(start) ? 0 : start,
+        End: isNaN(end) ? (totalLength - 1) : end
+    };
+
+    if (!isNaN(start) && isNaN(end)) {
+        result.Start = start;
+        result.End = totalLength - 1;
+    }
+
+    if (isNaN(start) && !isNaN(end)) {
+        result.Start = totalLength - end;
+        result.End = totalLength - 1;
+    }
+
+    return result;
 }

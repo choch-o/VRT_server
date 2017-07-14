@@ -1,0 +1,55 @@
+<html>
+  <head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  </head>
+  <body>
+    <h1>feedback</h1>
+    <div style="height: 360px; display: -webkit-flex; display: flex;" >
+      <video id='presentation_video' style="display: inline-block; vertical-align: top" width="640" height="360" controls>
+        <source src="../videos/<%= videoName %>" type="video/mp4">
+      </video>
+      <div style="height: 360px; display: inline-block; vertical-align: top; overflow-y: scroll; border: 1px black solid; -webkit-flex: 1; flex: 1;">
+        <ul id="feedback_list" style="margin-top: 0; margin-bottom: 0; padding-top: 10px; padding-bottom: 10px">
+        </ul>
+      </div>
+    </div>
+    <hr>
+    <button id='button'>move to 0</button>
+    <script type="text/javascript">
+      var videoElement = document.getElementById('presentation_video');
+      var buttonElement = document.getElementById('button');
+      var httpRequest = new XMLHttpRequest();
+      httpRequest.onreadystatechange = () => {
+        if (httpRequest.readyState === 4) {
+          if (httpRequest.status === 200) {
+            console.log('http request succeed!');
+            var feedbackList = JSON.parse(httpRequest.responseText).feedback;
+            console.log(feedbackList);
+            console.log(document);
+            for (var i = 0; i < feedbackList.length; i++) {
+              var startTime = feedbackList[i].startTime;
+              var startTimeText = '' + parseInt(startTime/60000) + ':' + parseInt((startTime%60000)/1000);
+              var feedbackListElement = document.getElementById('feedback_list');
+              console.log(feedbackListElement);
+              var feedbackListItemElement = document.createElement('li');
+              feedbackListItemElement.innerHTML = startTimeText + ' - ' + feedbackList[i].feedback;
+              feedbackListItemElement.addEventListener('click', () => {
+                console.log(videoElement.currentTime);
+                videoElement.currentTime = startTime/1000;
+                console.log(videoElement.currentTime);
+                console.log(startTime/1000 + '');
+              });
+              feedbackListElement.appendChild(feedbackListItemElement);
+            }
+          }
+        }
+      }
+      httpRequest.open('GET', 'http://localhost:3000/get_feedback/<%= videoName %>', true);
+      httpRequest.send(null);
+
+      buttonElement.addEventListener('click', () => {
+        console.log(videoElement.currentTime);
+      });
+    </script>
+  </body>
+</html>
