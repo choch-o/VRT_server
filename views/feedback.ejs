@@ -1,6 +1,9 @@
 <html>
   <head>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+    <script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.6.0/Chart.js"></script>
   </head>
   <body>
     <h1>feedback</h1>
@@ -8,47 +11,187 @@
       <video id='presentation_video' style="display: inline-block; vertical-align: top" width="640" height="360" controls>
         <source src="../videos/<%= videoName %>" type="video/mp4">
       </video>
-      <div style="height: 360px; display: inline-block; vertical-align: top; overflow-y: scroll; border: 1px black solid; -webkit-flex: 1; flex: 1;">
-        <ul id="feedback_list" style="margin-top: 0; margin-bottom: 0; padding-top: 10px; padding-bottom: 10px">
-        </ul>
+      <div style="height: 360px; display: inline-block; vertical-align: top; border: 1px black solid; -webkit-flex: 1; flex: 1">
+        <div style="text-align: center; margin-top: 10px">
+          <p>Feedback List</p>
+          <span id='time_interval'>All</span>
+        </div>
+        <div style="height: 330px; overflow-y: scroll">
+          <ul id="feedback_list" style="margin-top: 0; margin-bottom: 0; padding-top: 10px; padding-bottom: 10px">
+          </ul>
+        </div>
       </div>
     </div>
     <hr>
-    <button id='button'>move to 0</button>
     <script type="text/javascript">
-      var videoElement = document.getElementById('presentation_video');
-      var buttonElement = document.getElementById('button');
-      var httpRequest = new XMLHttpRequest();
+      let videoElement = document.getElementById('presentation_video');
+      let feedbackListElement = document.getElementById('feedback_list');
+      let timeIntervalElement = document.getElementById('time_interval');
+      let feedbackList = [];
+
+      let httpRequest = new XMLHttpRequest();
       httpRequest.onreadystatechange = () => {
         if (httpRequest.readyState === 4) {
           if (httpRequest.status === 200) {
             console.log('http request succeed!');
-            var feedbackList = JSON.parse(httpRequest.responseText).feedback;
-            console.log(feedbackList);
-            console.log(document);
-            for (var i = 0; i < feedbackList.length; i++) {
-              var startTime = feedbackList[i].startTime;
-              var startTimeText = '' + parseInt(startTime/60000) + ':' + parseInt((startTime%60000)/1000);
-              var feedbackListElement = document.getElementById('feedback_list');
-              console.log(feedbackListElement);
-              var feedbackListItemElement = document.createElement('li');
-              feedbackListItemElement.innerHTML = startTimeText + ' - ' + feedbackList[i].feedback;
-              feedbackListItemElement.addEventListener('click', () => {
-                console.log(videoElement.currentTime);
-                videoElement.currentTime = startTime/1000;
-                console.log(videoElement.currentTime);
-                console.log(startTime/1000 + '');
-              });
-              feedbackListElement.appendChild(feedbackListItemElement);
-            }
+            feedbackList = JSON.parse(httpRequest.responseText).feedback;
+            feedbackList.sort(compareFeedback);
+            appendFeedbackList(feedbackList);
           }
         }
       }
       httpRequest.open('GET', 'http://localhost:3000/get_feedback/<%= videoName %>', true);
       httpRequest.send(null);
 
-      buttonElement.addEventListener('click', () => {
-        console.log(videoElement.currentTime);
+      function appendFeedbackList(feedbackList) {
+        $( feedbackListElement ).empty();
+
+        for (let i = 0; i < feedbackList.length; i++) {
+          let startTime = feedbackList[i].startTime;
+          let startTimeText = '' + parseInt(startTime/60000) + ':' + parseInt((startTime%60000)/1000);
+
+          let feedbackListItemElement = document.createElement('li');
+          feedbackListItemElement.innerHTML = startTimeText + ' - ' + feedbackList[i].feedback;
+          feedbackListItemElement.addEventListener('click', () => {
+            videoElement.currentTime = startTime/1000;
+          });
+          feedbackListElement.appendChild(feedbackListItemElement);
+        }
+      }
+
+      function compareFeedback(feedback1, feedback2) {
+        if (feedback1.startTime < feedback2.startTime) return -1;
+        else if (feedback1.startTime > feedback2.startTime) return 1;
+        else {
+          if (feedback1.endTime < feedback2.endTime) return -1;
+          else if (feedback1.endTime > feedback2.endTime) return -1;
+          else return 0;
+        }
+      }
+    </script>
+    <canvas id="feedbackChart" width="600" height="100"></canvas>
+    <script>
+      videoElement.addEventListener('loadedmetadata', function() {
+        let ctx = document.getElementById("feedbackChart");
+        let dataLabels = [];
+        let dataData = [];
+        let timeCnt = 0;
+        let videoLength = Math.round(videoElement.duration*1000);
+        let intervalNum = Math.round(videoLength / 10000)
+        let timeInterval = Math.round(videoLength / intervalNum);
+        console.log(videoLength);
+        console.log(timeInterval);
+
+        for (let i = 0; i <= intervalNum; i++) {
+          let startTime = timeCnt - timeInterval/2;
+          let endTime = timeCnt + timeInterval/2 < videoLength ? timeCnt + timeInterval/2 : videoLength;
+          let feedbackCnt = 0;
+          for (let i = 0; i < feedbackList.length; i++) {
+            if (timeIntervalOverlap(startTime, endTime, feedbackList[i])) {
+              feedbackCnt++;
+            }
+          }
+
+          dataLabels.push('' + Math.floor(timeCnt/60000) + ':' + Math.floor((timeCnt%60000) / 1000));
+          dataData.push(feedbackCnt);
+          timeCnt += timeInterval;
+        }
+        console.log(dataLabels);
+        console.log(dataData);
+
+        let myChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+              labels: dataLabels,
+              datasets: [{
+                  label: '# of Feedback',
+                  data: dataData,
+                  backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                  borderColor: 'rgba(255,99,132,1)',
+                  borderWidth: 1,
+                  pointRadius: 10,
+                  pointHoverRadius: 12,
+                  pointHitRadius: 10,
+              }]
+          },
+          options: {
+            onClick: onGraphClick,
+            layout: {
+              padding: {
+                left: 50,
+                right: 50,
+                top: 0,
+                bottom: 0
+              }
+            },
+            scales: {
+              xAxis: [{
+                gridLines: {
+                  display: false
+                },
+                type: 'time',
+                time: {
+                  displayFormats: {
+                    second: 'mm:ss a'
+                  }
+                }
+              }],
+              yAxes: [{
+                gridLines: {
+                  display: false
+                },
+                ticks: {
+                  beginAtZero:true
+                }
+              }]
+            }
+          }
+        });
+
+        function timeIntervalOverlap(startTime, endTime, feedback) {
+          if ((startTime < feedback.startTime && endTime > feedback.endTime)
+            || (startTime > feedback.startTime && startTime < feedback.endTime)
+            || (endTime > feedback.startTime && endTime < feedback.endTime))
+            return true;
+          else return false;
+        }
+
+        function onGraphClick(event, elements) {
+          console.log(event);
+          console.log(elements);
+          if (elements.length !== 0) {
+            let chartElement = elements[0];
+            let timeToGo = timeInterval * chartElement._index;
+            // videoElement.removeEventListener('timeupdate', onTimeUpdateListener);
+            videoElement.currentTime = timeToGo / 1000;
+            // appendFeedbackList(getFeedbackForSection(chartElement._index));
+            // timeIntervalElement.innerHTML = 'Around ' + Math.floor(timeToGo / 60000) + ':' + Math.floor((timeToGo % 60000) / 1000);
+            // videoElement.addEventListener('timeupdate', onTimeUpdateListener);
+
+            function onTimeUpdateListener(e) {
+              const currTimeToGo = timeToGo + 0;
+              if (videoElement.currentTime * 1000 > currTimeToGo + timeInterval / 2
+                || videoElement.currentTime * 1000 < currTimeToGo - timeInterval / 2) {
+                timeIntervalElement.innerHTML = 'All';
+                appendFeedbackList(feedbackList);
+                videoElement.removeEventListener('timeupdate', onTimeUpdateListener);
+              }
+            }
+          }
+        }
+
+        function getFeedbackForSection(index) {
+          let startTime = timeInterval * index - timeInterval / 2;
+          let endTime = timeInterval * index + timeInterval / 2;
+          let feedbackForSection = [];
+          for (let i = 0; i < feedbackList.length; i++) {
+            if (timeIntervalOverlap(startTime, endTime, feedbackList[i])) {
+              feedbackForSection.push(feedbackList[i]);
+            }
+          }
+
+          return feedbackForSection;
+        }
       });
     </script>
   </body>
