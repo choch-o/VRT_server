@@ -183,7 +183,9 @@ module.exports = function(app, io)
           userId: data.userId,
           startTime: data.startTime,
           endTime: data.endTime,
-          feedback: data.feedback
+          feedback: data.feedback,
+          like: [],
+          thread: []
         };
         console.log(newFeedback);
         videoInfo.feedback.push(newFeedback);
@@ -278,16 +280,94 @@ module.exports = function(app, io)
         var feedbackList = videoInfo.feedback;
         console.log('feedback list');
         for (var i = 0; i < feedbackList.length; i++) {
-          console.log(feedbackList[i]);
-          console.log(feedbackList[i].userId === data.userId,
-            feedbackList[i].startTime === data.startTime,
-            feedbackList[i].endTime === data.endTime,
-            feedbackList[i].feedback === data.feedback);
-          if (feedbackList[i].userId === data.userId
-            && feedbackList[i].startTime === data.startTime
-            && feedbackList[i].endTime === data.endTime
-            && feedbackList[i].feedback === data.feedback)
+          if (isSame(feedbackList[i], data))
             videoInfo.feedback.splice(i, 1);
+        }
+        videoInfo.save(function(err) {
+          if (err) res.status(500).json({ success: false });
+          res.json({ success: true });
+        });
+      });
+    });
+  });
+
+  app.post('/give_like_to_feedback/:videoName', function(req, res) {
+    console.log('new give like to feedback request!');
+    var content = '';
+
+    req.on('data', function(data) {
+      content += data;
+    });
+
+    req.on('end', function() {
+      var data = JSON.parse(content);
+      console.log(data);
+      VideoInfo.findOne({ name: req.params.videoName }, function(err, videoInfo) {
+        var feedbackList = videoInfo.feedback;
+        for (var i = 0; i < feedbackList.length; i++) {
+          if (isSame(feedbackList[i], data))
+            videoInfo.feedback[i].like.push(data.likeUserId);
+        }
+        videoInfo.save(function(err) {
+          if (err) res.status(500).json({ success: false });
+          res.json({ success: true });
+          io.emit('feedback like', {
+            userId: data.userId,
+            startTime: data.startTime,
+            endTime: data.endTime,
+            feedback: data.feedback,
+            like: data.like
+          })
+        });
+      });
+    });
+  });
+
+  app.post('/give_like_to_thread/:videoName', function(req, res) {
+    console.log('new give like to thread request!');
+    var content = '';
+
+    req.on('data', function(data) {
+      content += data;
+    });
+
+    req.on('end', function() {
+      var data = JSON.parse(content);
+      console.log(data);
+      VideoInfo.findOne({ name: req.params.videoName }, function(err, videoInfo) {
+        var feedbackList = videoInfo.feedback;
+        for (var i = 0; i < feedbackList.length; i++) {
+          if (isSame(feedbackList[i], data))
+            videoInfo.feedback[i].thread[data.threadIndex].like.push(data.likeUserId);
+        }
+        videoInfo.save(function(err) {
+          if (err) res.status(500).json({ success: false });
+          res.json({ success: true });
+        });
+      });
+    });
+  });
+
+  app.post('/new_thread_feedback/:videoName', function(req, res) {
+    console.log('new thread feedback request!');
+    var content = '';
+
+    req.on('data', function(data) {
+      content += data;
+    });
+
+    req.on('end', function() {
+      var data = JSON.parse(content);
+      console.log(data);
+      VideoInfo.findOne({ name: req.params.videoName }, function(err, videoInfo) {
+        var feedbackList = videoInfo.feedback;
+        for (var i = 0; i < feedbackList.length; i++) {
+          if (isSame(feedbackList[i], data))
+            videoInfo.feedback[i].thread.push({
+              userId: data.threadUserId,
+              feedback: data.threadFeedback,
+              like: 0
+            });
         }
         videoInfo.save(function(err) {
           if (err) res.status(500).json({ success: false });
@@ -300,6 +380,16 @@ module.exports = function(app, io)
   app.get('/feedback/:videoName', function(req, res) {
     res.render('feedback', { videoName: req.params.videoName });
   });
+}
+
+function isSame(feedback1, feedback2) {
+  if (feedback1.userId === feedback2.userId
+    && feedback1.startTime === feedback2.startTime
+    && feedback1.endTime === feedback2.endTime
+    && feedback1.feedback === feedback2.feedback
+    && JSON.stringify(feedback1.like) === JSON.stringify(feedback2.like))
+    return true;
+  return false;
 }
 
 function readRangeHeader(range, totalLength) {
