@@ -316,7 +316,8 @@ module.exports = function(app, io)
             startTime: data.startTime,
             endTime: data.endTime,
             feedback: data.feedback,
-            like: data.like
+            like: data.like,
+            likeUserId: data.likeUserId
           })
         });
       });
@@ -366,12 +367,21 @@ module.exports = function(app, io)
             videoInfo.feedback[i].thread.push({
               userId: data.threadUserId,
               feedback: data.threadFeedback,
-              like: 0
+              like: []
             });
         }
         videoInfo.save(function(err) {
           if (err) res.status(500).json({ success: false });
           res.json({ success: true });
+          io.emit('thread feedback addition', {
+            userId: data.userId,
+            startTime: data.startTime,
+            endTime: data.endTime,
+            feedback: data.feedback,
+            like: data.like,
+            threadUserId: data.threadUserId,
+            threadFeedback: data.threadFeedback
+          })
         });
       });
     });
