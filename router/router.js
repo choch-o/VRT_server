@@ -324,8 +324,8 @@ module.exports = function(app, io)
     });
   });
 
-  app.post('/give_like_to_thread/:videoName', function(req, res) {
-    console.log('new give like to thread request!');
+  app.post('/give_like_to_thread_feedback/:videoName', function(req, res) {
+    console.log('new give like to thread feedback request!');
     var content = '';
 
     req.on('data', function(data) {
@@ -344,6 +344,15 @@ module.exports = function(app, io)
         videoInfo.save(function(err) {
           if (err) res.status(500).json({ success: false });
           res.json({ success: true });
+          io.emit('thread feedback like', {
+            userId: data.userId,
+            startTime: data.startTime,
+            endTime: data.endTime,
+            feedback: data.feedback,
+            like: data.like,
+            threadIndex: data.threadIndex,
+            likeUserId: data.likeUserId
+          })
         });
       });
     });
