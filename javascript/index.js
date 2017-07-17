@@ -10,13 +10,13 @@ $document.ready(() => {
           let videoItemElement = document.createElement('li');
           let videoItemLinkElement = document.createElement('a');
           videoItemLinkElement.innerHTML = videoList[i].replace('static/videos/', '');
-          videoItemLinkElement.href = 'http://localhost:3000/feedback/' + videoItemLinkElement.innerHTML;
+          videoItemLinkElement.href = 'http://emma.kaist.ac.kr:3000/feedback/' + videoItemLinkElement.innerHTML;
           videoItemElement.appendChild(videoItemLinkElement);
           videoListElement.appendChild(videoItemElement);
         }
       }
     }
   }
-  httpRequest.open('GET', 'http://localhost:3000/videos', true);
+  httpRequest.open('GET', 'http://emma.kaist.ac.kr:3000/videos', true);
   httpRequest.send(null);
 });

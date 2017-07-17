@@ -40,7 +40,7 @@
           }
         }
       }
-      httpRequest.open('GET', 'http://localhost:3000/get_feedback/<%= videoName %>', true);
+      httpRequest.open('GET', 'http://emma.kaist.ac.kr:3000/get_feedback/<%= videoName %>', true);
       httpRequest.send(null);
 
       function appendFeedbackList(feedbackList) {
