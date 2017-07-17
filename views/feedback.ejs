@@ -17,8 +17,8 @@
           <span id='time_interval'>All</span>
         </div>
         <div style="height: 330px; overflow-y: scroll">
-          <ul id="feedback_list" style="margin-top: 0; margin-bottom: 0; padding-top: 10px; padding-bottom: 10px">
-          </ul>
+          <div id="feedback_list" style="margin-top: 0; margin-bottom: 0; padding: 10px">
+          </div>
         </div>
       </div>
     </div>
@@ -50,11 +50,34 @@
           let startTime = feedbackList[i].startTime;
           let startTimeText = '' + parseInt(startTime/60000) + ':' + parseInt((startTime%60000)/1000);
 
-          let feedbackListItemElement = document.createElement('li');
-          feedbackListItemElement.innerHTML = startTimeText + ' - ' + feedbackList[i].feedback;
+          let feedbackListItemElement = document.createElement('div');
+          let feedbackElement = document.createElement('span');
+          let threadElement = document.createElement('div');
+          let feedbackStr = startTimeText + ' - ' + feedbackList[i].feedback;
+          console.log(feedbackList[i].like);
+          if (feedbackList[i].like.length !== 0)
+            feedbackStr += ' (+' + feedbackList[i].like.length + ')';
+          feedbackElement.innerHTML = feedbackStr;
           feedbackListItemElement.addEventListener('click', () => {
             videoElement.currentTime = startTime/1000;
           });
+          feedbackListItemElement.appendChild(feedbackElement);
+
+          if (feedbackList[i].thread.length !== 0) {
+            for (let j = 0; j < feedbackList[i].thread.length; j++) {
+              let threadFeedbackElement = document.createElement('span');
+              let threadFeedbackStr = feedbackList[i].thread[j].feedback;
+              if (feedbackList[i].thread[j].like.length !== 0)
+                threadFeedbackStr += ' (+' + feedbackList[i].thread[j].like.length + ')';
+              threadFeedbackStr += '<br>';
+              threadFeedbackElement.innerHTML = threadFeedbackStr;
+              threadElement.appendChild(threadFeedbackElement);
+            }
+
+            threadElement.style.marginLeft = "30px";
+            feedbackListItemElement.appendChild(threadElement);
+          }
+
           feedbackListElement.appendChild(feedbackListItemElement);
         }
       }
