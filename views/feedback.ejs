@@ -4,25 +4,129 @@
     <script src="http://d3js.org/d3.v3.min.js"></script>
     <script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.6.0/Chart.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
   </head>
   <body>
-    <h1>feedback</h1>
-    <div style="height: 360px; display: -webkit-flex; display: flex;" >
-      <video id='presentation_video' style="display: inline-block; vertical-align: top" width="640" height="360" controls>
-        <source src="../videos/<%= videoName %>" type="video/mp4">
-      </video>
-      <div style="height: 360px; display: inline-block; vertical-align: top; border: 1px black solid; -webkit-flex: 1; flex: 1">
-        <div style="text-align: center; margin-top: 10px">
+    <h1 style="text-align: center"><%= videoName %></h1>
+    <div style="display: -webkit-flex; display: flex;">
+      <div>
+        <video id="presentation_video" width="800" height="450" controls>
+          <source src="../videos/<%= videoName %>" type="video/mp4">
+        </video>
+        <hr>
+        <canvas id="feedbackChart" width="600" height="100"></canvas>
+      </div>
+      <div style="height: 560px; margin-left: 20px; margin-right: 20px; -webkit-flex: 1; flex: 1; position: relative;">
+        <ul id="feedback_prompt_tab" class="nav nav-pills" style="display: -webkit-flex; display: flex;">
+          <li role="presentation" class="active" style="-webkit-flex: 1; flex: 1;">
+            <a href="#feedback_list" aria-controls="feedback_list" role="tab" data-toggle="pill" style="text-align: center">Feedback</a></li>
+          <li role="presentation" style="-webkit-flex: 1; flex: 1;">
+            <a href="#prompt_list" aria-controls="prompt_list" role="tab" data-toggle="pill" style="text-align: center">Prompt</a></li>
+        </ul>
+        <div class="tab-content" style="width: 100%; height: 100%; position: absolute; border: 1px black solid">
+          <div role="tabpanel" class="tab-pane active" id="feedback_list">helo</div>
+          <div role="tabpanel" class="tab-pane" id="prompt_list">
+            <div style="text-align: center">
+              <button type="button" class="btn btn-primary btn-lg" style="display: inline-block; margin-top: 20px" data-toggle="modal" data-target="#new_prompt_modal">+</button>
+            </div>
+          </div>
+        </div>
+        <script type="text/javascript">
+          let promptListElement = document.getElementById('prompt_list');
+
+          $('#feedback_prompt_tab a').click(function(e) {
+            e.preventDefault();
+            $(this).tab('show');
+          });
+        </script>
+        <!-- <div style="text-align: center; margin-top: 10px">
           <p>Feedback List</p>
           <span id='time_interval'>All</span>
         </div>
         <div style="height: 330px; overflow-y: scroll">
           <div id="feedback_list" style="margin-top: 0; margin-bottom: 0; padding: 10px">
           </div>
+        </div> -->
+      </div>
+    </div>
+    <div class="modal fade" id="new_prompt_modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" style="text-align: center">Create new prompt</h4>
+          </div>
+          <div class="modal-body">
+            <ul id="new_prompt_type_tab" class="nav nav-pills" style="display: -webkit-flex; display: flex;">
+              <li id="custom_question_tab" role="presentation" class="active" style="-webkit-flex: 1; flex: 1;">
+                <a href="#custom_question_form" aria-controls="custom_question_form" role="tab" data-toggle="pill" style="text-align: center;">Custom question</a>
+              </li>
+              <li id="ab_testing_tab" role="presentation" style="-webkit-flex: 1; flex: 1;">
+                <a href="#ab_testing_form" aria-controls="ab_testing_form" role="tab" data-toggle="pill" style="text-align: center;">A-B testing</a>
+              </li>
+            </ul>
+            <div class="tab-content">
+              <div role="tabpanel" class="tab-pane active" id="custom_question_form" style="margin-top: 20px">
+                <form>
+                  <div class="form-group">
+                    <label for="custom_question_prompt_time">Time to pop up</label>
+                    <div class="input-group">
+                      <input type="number" min="0" max="59" class="form-control" id="custom_question_prompt_time_min" placeholder="0">
+                      <div class="input-group-addon">:</div>
+                      <input type="number" min="0" max="59" class="form-control" id="custom_question_prompt_time_sec" placeholder="00">
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="custom_question_prompt_question">Question</label>
+                    <input type="text" class="form-control" id="custom_question_prompt_question" placeholder="Type your question">
+                  </div>
+                </form>
+              </div>
+              <div role="tabpanel" class="tab-pane" id="ab_testing_form">
+                hello
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            <button type="button" id="new_prompt_submit_btn" class="btn btn-primary">Submit</button>
+          </div>
         </div>
       </div>
     </div>
-    <hr>
+    <script type="text/javascript">
+      $('#new_prompt_type_tab a').click(function(e) {
+        e.preventDefault();
+        $(this).tab('show');
+      });
+
+      $('#new_prompt_submit_btn').click(function(e) {
+        console.log('pressed');
+        let newPromptRequest = new XMLHttpRequest();
+        let promptType;
+        if (document.getElementById('custom_question_tab').classList.contains('active')) promptType = 0;
+        else if (document.getElementById('ab_testing_tab').classList.contains('active')) promptType = 1;
+        else promptType = 2;
+        let promptTime = Number($('#custom_question_prompt_time_min').val()) * 60000 + Number($('#custom_question_prompt_time_sec').val()) * 1000;
+        let postData = {
+          type: promptType,
+          time: promptTime,
+          question: $('#custom_question_prompt_question').val(),
+        };
+        console.log(JSON.stringify(postData));
+
+        newPromptRequest.onreadystatechange = () => {
+          if (newPromptRequest.readyState === 4) {
+            if (newPromptRequest.status === 200) {
+              console.log('new prompt request succeed!');
+            }
+          }
+        }
+        newPromptRequest.open('POST', 'http://emma.kaist.ac.kr:3000/new_prompt/<%= videoName %>', true);
+        newPromptRequest.send(JSON.stringify(postData));
+      });
+    </script>
     <script type="text/javascript">
       let videoElement = document.getElementById('presentation_video');
       let feedbackListElement = document.getElementById('feedback_list');
@@ -92,7 +196,6 @@
         }
       }
     </script>
-    <canvas id="feedbackChart" width="600" height="100"></canvas>
     <script>
       videoElement.addEventListener('loadedmetadata', function() {
         let ctx = document.getElementById("feedbackChart");

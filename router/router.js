@@ -53,6 +53,7 @@ module.exports = function(app, io)
         videoInfo.name = filename;
         videoInfo.feedback = [];
         videoInfo.emojiFeedback = [];
+        videoInfo.prompt = [];
         videoInfo.save(function(err) {
           // if (err) {
           //   console.error(err);
@@ -141,6 +142,32 @@ module.exports = function(app, io)
     filestream.pipe(res);
   })
 
+  app.post('/new_prompt/:videoName', function(req, res) {
+    console.log('new prompt arrived!');
+    var content = '';
+
+    req.on('data', function(data) {
+      content += data;
+    });
+
+    req.on('end', function() {
+      var data = JSON.parse(content);
+      VideoInfo.findOne({ name: req.params.videoName }, function(err, videoInfo) {
+        newPrompt = {
+          promptType: data.type,
+          time: data.time,
+          question: data.question,
+          answers: []
+        };
+        videoInfo.prompt.push(newPrompt);
+        videoInfo.save(function(err) {
+          if (err) res.status(500).json({ error: 'failed to add new prompt' });
+          res.json({ message: 'new prompt added' });
+        });
+      });
+    });
+  })
+
   app.post('/new_emoji_feedback/:videoName', function(req, res) {
     console.log('new emoji feedback arrived!');
     var content = '';
@@ -198,6 +225,39 @@ module.exports = function(app, io)
     });
   });
 
+  app.post('/new_prompt_answer/:videoName', function(req, res) {
+    console.log('new prompt answer arrived!');
+    var content = '';
+
+    req.on('data', function(data) {
+      content += data;
+    });
+
+    req.on('end', function() {
+      var data = JSON.parse(content);
+      VideoInfo.findOne({ name: req.params.videoName }, function(err, videoInfo) {
+        newPromptAnswer = {
+          userId: data.userId,
+          answer: data.answer
+        };
+        console.log(newPromptAnswer);
+        for (var i = 0; i < videoInfo.prompt.length; i++) {
+          var prompt = videoInfo.prompt[i];
+          if (prompt.promptType === data.type
+            && prompt.time === data.time
+            && prompt.question === data.question) {
+              prompt.answers.push(newPromptAnswer);
+              break;
+          }
+        }
+        videoInfo.save(function(err) {
+          if (err) res.status(500).json({ success: 'failed to update prompt answer' });
+          res.json({ success: 'success' });
+        });
+      });
+    });
+  });
+
   app.get('/get_emoji_feedback/:videoName', function(req, res) {
     console.log('emoji feedback request!');
     VideoInfo.findOne({ name: req.params.videoName }, function(err, videoInfo) {
@@ -211,6 +271,14 @@ module.exports = function(app, io)
     VideoInfo.findOne({ name: req.params.videoName }, function(err, videoInfo) {
       var feedback = videoInfo.feedback;
       res.json({ feedback : feedback });
+    });
+  });
+
+  app.get('/get_prompt/:videoName', function(req, res) {
+    console.log('prompt request!');
+    VideoInfo.findOne({ name: req.params.videoName }, function(err, videoInfo) {
+      var prompt = videoInfo.prompt;
+      res.json({ prompt : prompt });
     });
   });
 

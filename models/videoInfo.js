@@ -45,6 +45,19 @@ var videoInfoSchema = new Schema({
         startTime: Number,
         emoji: Number
       }
+  ],
+  prompt: [
+    {
+      promptType: Number,
+      time: Number,
+      question: String,
+      answers: [
+        {
+          userId: String,
+          answer: String
+        }
+      ]
+    }
   ]
 });
 
