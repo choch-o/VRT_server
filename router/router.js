@@ -278,7 +278,7 @@ module.exports = function(app, io)
     console.log('prompt request!');
     VideoInfo.findOne({ name: req.params.videoName }, function(err, videoInfo) {
       var prompt = videoInfo.prompt;
-      res.json({ prompt : prompt });
+      res.json({ prompt: prompt });
     });
   });
 

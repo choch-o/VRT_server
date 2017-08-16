@@ -1,11 +1,10 @@
 <html>
   <head>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-    <script src="http://d3js.org/d3.v3.min.js"></script>
-    <script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.6.0/Chart.js"></script>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+    <script src="https://use.fontawesome.com/718410bc64.js"></script>
   </head>
   <body>
     <h1 style="text-align: center"><%= videoName %></h1>
@@ -28,13 +27,65 @@
           <div role="tabpanel" class="tab-pane active" id="feedback_list">helo</div>
           <div role="tabpanel" class="tab-pane" id="prompt_list">
             <div style="text-align: center">
-              <button type="button" class="btn btn-primary btn-lg" style="display: inline-block; margin-top: 20px" data-toggle="modal" data-target="#new_prompt_modal">+</button>
+              <button type="button" class="btn btn-primary btn-lg" style="display: inline-block; margin-top: 20px; margin-bottom: 20px" data-toggle="modal" data-target="#new_prompt_modal">+</button>
+            </div>
+            <div id="prompt_list_body">
             </div>
           </div>
+          <script type="text/javascript">
+          updatePromptList();
+
+          function updatePromptList() {
+            let promptListElement = document.getElementById('prompt_list_body');
+            let promptListRequest = new XMLHttpRequest();
+
+            promptListRequest.onreadystatechange = () => {
+              if (promptListRequest.readyState === 4) {
+                if (promptListRequest.status === 200) {
+                  console.log('prompt list request succeed!');
+
+                  let promptList = JSON.parse(promptListRequest.responseText).prompt;
+                  promptList.sort(comparePrompt);
+
+                  for (let i = 0; i < promptList.length; i++) {
+                    promptListElement.innerHTML += `<div class="panel panel-default" style="margin-bottom: 0">
+                      <div class="panel-body" role="tab">
+                        <h4 class="panel-title">
+                          ${ '' + parseInt(promptList[i].time/60000) + ':' + parseInt((promptList[i].time%60000)/1000) } - ${ promptList[i].question }
+                          <a style="float: right" data-toggle="collapse" href="#prompt_detail_${ i }" aria-expanded="true" aria-controls=""><i class="fa fa-angle-down" aria-hidden="true"></i></a>
+                        </h4>
+                      </div>
+                      <div id="prompt_detail_${ i }" class="panel-collapse collapse" role="tabpanel">
+                        <div id="prompt_detail_body_${ i }" class="panel-body">
+                          <p style="text-align: center">Answers</h5>
+                        </div>
+                      </div>
+                    </div>`
+
+                    let promptDetailBodyElement = document.getElementById('prompt_detail_body_' + i);
+                    for (let j = 0; j < promptList[j].answers.length; j++) {
+                      let promptAnswerElement = document.createElement('p');
+                      promptAnswerElement.style.marginBottom = 5;
+                      promptAnswerElement.innerHTML = promptList[i].answers[j].answer;
+                      promptDetailBodyElement.appendChild(promptAnswerElement);
+                    }
+                  }
+                }
+              }
+            }
+            // newPromptRequest.open('POST', 'http://emma.kaist.ac.kr:3000/new_prompt/<%= videoName %>', true);
+            promptListRequest.open('GET', 'http://192.168.1.144:3000/get_prompt/<%= videoName %>', true);
+            promptListRequest.send(null);
+          }
+
+          function comparePrompt(prompt1, prompt2) {
+            if (prompt1.time < prompt2.time) return -1;
+            else if (prompt1.time > prompt2.time) return 1;
+            else return 0;
+          }
+          </script>
         </div>
         <script type="text/javascript">
-          let promptListElement = document.getElementById('prompt_list');
-
           $('#feedback_prompt_tab a').click(function(e) {
             e.preventDefault();
             $(this).tab('show');
@@ -112,10 +163,12 @@
           if (newPromptRequest.readyState === 4) {
             if (newPromptRequest.status === 200) {
               console.log('new prompt request succeed!');
+              updatePromptList();
             }
           }
         }
-        newPromptRequest.open('POST', 'http://emma.kaist.ac.kr:3000/new_prompt/<%= videoName %>', true);
+        // newPromptRequest.open('POST', 'http://emma.kaist.ac.kr:3000/new_prompt/<%= videoName %>', true);
+        newPromptRequest.open('POST', 'http://192.168.1.144:3000/new_prompt/<%= videoName %>', true);
         newPromptRequest.send(JSON.stringify(postData));
       });
     </script>
@@ -124,7 +177,6 @@
       let feedbackListElement = document.getElementById('feedback_list');
       let timeIntervalElement = document.getElementById('time_interval');
       let feedbackList = [];
-
       let httpRequest = new XMLHttpRequest();
       httpRequest.onreadystatechange = () => {
         if (httpRequest.readyState === 4) {
@@ -136,7 +188,8 @@
           }
         }
       }
-      httpRequest.open('GET', 'http://emma.kaist.ac.kr:3000/get_feedback/<%= videoName %>', true);
+      // httpRequest.open('GET', 'http://emma.kaist.ac.kr:3000/get_feedback/<%= videoName %>', true);
+      httpRequest.open('GET', 'http://192.168.1.144:3000/get_feedback/<%= videoName %>', true);
       httpRequest.send(null);
 
       function appendFeedbackList(feedbackList) {
@@ -145,36 +198,69 @@
         for (let i = 0; i < feedbackList.length; i++) {
           let startTime = feedbackList[i].startTime;
           let startTimeText = '' + parseInt(startTime/60000) + ':' + parseInt((startTime%60000)/1000);
+          feedbackListElement.innerHTML += `<div class="panel panel-default" style="margin-bottom: 0">
+            <div class="panel-body" role="tab">
+              <h4 id="feedback_${i}" class="panel-title">
+                ${ startTimeText + ' - ' + feedbackList[i].feedback }
+                <a style="float: right" data-toggle="collapse" href="#thread_feedback_${ i }" aria-expanded="true" aria-controls=""><i class="fa fa-angle-down" aria-hidden="true"></i></a>
+              </h4>
+            </div>
+            <div id="thread_feedback_${ i }" class="panel-collapse collapse" role="tabpanel">
+              <div id="thread_feedback_body_${ i }"class="panel-body">
+              </div>
+            </div>
+          </div>`
 
-          let feedbackListItemElement = document.createElement('div');
-          let feedbackElement = document.createElement('span');
-          let threadElement = document.createElement('div');
-          let feedbackStr = startTimeText + ' - ' + feedbackList[i].feedback;
-          console.log(feedbackList[i].like);
-          if (feedbackList[i].like.length !== 0)
-            feedbackStr += ' (+' + feedbackList[i].like.length + ')';
-          feedbackElement.innerHTML = feedbackStr;
-          feedbackListItemElement.addEventListener('click', () => {
+          document.getElementById('feedback_' + i).addEventListener('click', () => {
             videoElement.currentTime = startTime/1000;
           });
-          feedbackListItemElement.appendChild(feedbackElement);
 
           if (feedbackList[i].thread.length !== 0) {
+            let threadFeedbackBodyElement = document.getElementById('thread_feedback_body_' + i);
             for (let j = 0; j < feedbackList[i].thread.length; j++) {
               let threadFeedbackElement = document.createElement('span');
               let threadFeedbackStr = feedbackList[i].thread[j].feedback;
-              if (feedbackList[i].thread[j].like.length !== 0)
-                threadFeedbackStr += ' (+' + feedbackList[i].thread[j].like.length + ')';
+              // if (feedbackList[i].thread[j].like.length !== 0)
+              //   threadFeedbackStr += ' (+' + feedbackList[i].thread[j].like.length + ')';
               threadFeedbackStr += '<br>';
               threadFeedbackElement.innerHTML = threadFeedbackStr;
-              threadElement.appendChild(threadFeedbackElement);
+              threadFeedbackBodyElement.appendChild(threadFeedbackElement);
             }
-
-            threadElement.style.marginLeft = "30px";
-            feedbackListItemElement.appendChild(threadElement);
           }
 
-          feedbackListElement.appendChild(feedbackListItemElement);
+
+
+
+
+          // let feedbackListItemElement = document.createElement('div');
+          // let feedbackElement = document.createElement('span');
+          // let threadElement = document.createElement('div');
+          // let feedbackStr = startTimeText + ' - ' + feedbackList[i].feedback;
+          // console.log(feedbackList[i].like);
+          // if (feedbackList[i].like.length !== 0)
+          //   feedbackStr += ' (+' + feedbackList[i].like.length + ')';
+          // feedbackElement.innerHTML = feedbackStr;
+          // feedbackListItemElement.addEventListener('click', () => {
+          //   videoElement.currentTime = startTime/1000;
+          // });
+          // feedbackListItemElement.appendChild(feedbackElement);
+          //
+          // if (feedbackList[i].thread.length !== 0) {
+          //   for (let j = 0; j < feedbackList[i].thread.length; j++) {
+          //     let threadFeedbackElement = document.createElement('span');
+          //     let threadFeedbackStr = feedbackList[i].thread[j].feedback;
+          //     if (feedbackList[i].thread[j].like.length !== 0)
+          //       threadFeedbackStr += ' (+' + feedbackList[i].thread[j].like.length + ')';
+          //     threadFeedbackStr += '<br>';
+          //     threadFeedbackElement.innerHTML = threadFeedbackStr;
+          //     threadElement.appendChild(threadFeedbackElement);
+          //   }
+          //
+          //   threadElement.style.marginLeft = "30px";
+          //   feedbackListItemElement.appendChild(threadElement);
+          // }
+          //
+          // feedbackListElement.appendChild(feedbackListItemElement);
         }
       }
 
