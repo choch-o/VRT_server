@@ -200,7 +200,7 @@
           let startTimeText = '' + parseInt(startTime/60000) + ':' + parseInt((startTime%60000)/1000);
           feedbackListElement.innerHTML += `<div class="panel panel-default" style="margin-bottom: 0">
             <div class="panel-body" role="tab">
-              <h4 id="feedback_${i}" class="panel-title">
+              <h4 id="feedback_${ i }" class="panel-title">
                 ${ startTimeText + ' - ' + feedbackList[i].feedback }
                 <a style="float: right" data-toggle="collapse" href="#thread_feedback_${ i }" aria-expanded="true" aria-controls=""><i class="fa fa-angle-down" aria-hidden="true"></i></a>
               </h4>
@@ -211,9 +211,12 @@
             </div>
           </div>`
 
-          document.getElementById('feedback_' + i).addEventListener('click', () => {
-            videoElement.currentTime = startTime/1000;
-          });
+          // console.log($('#feedback_' + i));
+
+          // $('#feedback_' + i).click(function(e) {
+          //   console.log('feedback clicked: ' + i);
+          //   videoElement.currentTime = startTime/1000;
+          // });
 
           if (feedbackList[i].thread.length !== 0) {
             let threadFeedbackBodyElement = document.getElementById('thread_feedback_body_' + i);
@@ -261,6 +264,12 @@
           // }
           //
           // feedbackListElement.appendChild(feedbackListItemElement);
+        }
+
+        for (let i = 0; i < feedbackList.length; i++) {
+          $('#feedback_' + i).click((e) => {
+            videoElement.currentTime = feedbackList[i].startTime/1000;
+          });
         }
       }
 
