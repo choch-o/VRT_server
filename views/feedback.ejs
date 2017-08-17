@@ -37,8 +37,10 @@
 
           function updatePromptList() {
             let promptListElement = document.getElementById('prompt_list_body');
-            let promptListRequest = new XMLHttpRequest();
+            while (promptListElement.hasChildNodes())
+              promptListElement.removeChild(promptListElement.childNodes[0]);
 
+            let promptListRequest = new XMLHttpRequest();
             promptListRequest.onreadystatechange = () => {
               if (promptListRequest.readyState === 4) {
                 if (promptListRequest.status === 200) {
@@ -74,7 +76,7 @@
               }
             }
             // newPromptRequest.open('POST', 'http://emma.kaist.ac.kr:3000/new_prompt/<%= videoName %>', true);
-            promptListRequest.open('GET', 'http://192.168.1.144:3000/get_prompt/<%= videoName %>', true);
+            promptListRequest.open('GET', 'http://143.248.197.65:3000/get_prompt/<%= videoName %>', true);
             promptListRequest.send(null);
           }
 
@@ -168,7 +170,7 @@
           }
         }
         // newPromptRequest.open('POST', 'http://emma.kaist.ac.kr:3000/new_prompt/<%= videoName %>', true);
-        newPromptRequest.open('POST', 'http://192.168.1.144:3000/new_prompt/<%= videoName %>', true);
+        newPromptRequest.open('POST', 'http://143.248.197.65:3000/new_prompt/<%= videoName %>', true);
         newPromptRequest.send(JSON.stringify(postData));
       });
     </script>
@@ -189,7 +191,7 @@
         }
       }
       // httpRequest.open('GET', 'http://emma.kaist.ac.kr:3000/get_feedback/<%= videoName %>', true);
-      httpRequest.open('GET', 'http://192.168.1.144:3000/get_feedback/<%= videoName %>', true);
+      httpRequest.open('GET', 'http://143.248.197.65:3000/get_feedback/<%= videoName %>', true);
       httpRequest.send(null);
 
       function appendFeedbackList(feedbackList) {
