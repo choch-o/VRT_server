@@ -5,6 +5,7 @@ var path = require('path')
 var mime = require('mime')
 var VideoInfo = require('./../models/videoInfo')
 var UserInfo = require('./../models/userInfo')
+var XMLHttpRequest = require('xmlhttprequest').XMLHttpRequest;
 
 module.exports = function(app, io)
 {
@@ -94,12 +95,14 @@ module.exports = function(app, io)
     var mimetype = mime.lookup(file);
 
     console.log(req.headers['range']);
+    console.log(req.headers);
 
     var responseHeaders = {};
     var rangeRequest = readRangeHeader(req.headers['range'], stat.size);
     var filestream = fs.createReadStream(file);
 
     if (rangeRequest == null) {
+      console.log("rangeRequest null");
       responseHeaders['Content-Type'] = mimetype;
       responseHeaders['Content-Length'] = stat.size;
       responseHeaders['Accept-Ranges'] = 'bytes';
@@ -114,10 +117,12 @@ module.exports = function(app, io)
       var end = rangeRequest.End;
 
       if (start >= stat.size || end >= stat.size) {
+        console.log(416);
         res.setHeader('Content-Range', 'bytes */' + stat.size);
         res.status(416);
         res.end();
       } else {
+        console.log(206);
         res.setHeader('Content-Range', 'bytes ' + start + '-' + end + '/' + stat.size);
         res.setHeader('Content-Length', start == end ? 0 : (end - start + 1));
         res.setHeader('Content-Type', mimetype);
@@ -132,6 +137,20 @@ module.exports = function(app, io)
 
   app.get('/prototype_apk', function(req, res) {
     var file = __dirname + '/../static/HYFBABP.apk';
+    var filename = path.basename(file);
+    var mimetype = mime.lookup(file);
+
+    res.setHeader('Content-disposition', 'attachment; filename=' + filename);
+    res.setHeader('Content-type', mimetype);
+
+    var filestream = fs.createReadStream(file);
+    filestream.pipe(res);
+  })
+
+  app.get('/download_video/:videoName', function(req, res) {
+    console.log('download video request!');
+    var file = __dirname + '/../static/videos/' + req.params.videoName;
+    console.log(file);
     var filename = path.basename(file);
     var mimetype = mime.lookup(file);
 
@@ -165,6 +184,51 @@ module.exports = function(app, io)
           res.json({ message: 'new prompt added' });
         });
       });
+    });
+  })
+
+
+
+
+
+  app.post('/token_refreshed/:userId', function(req, res) {
+    console.log('token refreshed arrived!');
+    var content = '';
+
+    req.on('data', function(data) {
+      content += data;
+    });
+
+    req.on('end', function() {
+      console.log(req.params.userId + ": " + content);
+      UserInfo.findOne({ userId: req.params.userId }, function(err, userInfo) {
+        userInfo.userToken = content;
+        userInfo.save(function(err) {
+          if (err) res.status(500).json({ error: 'failed to update token' });
+          res.json({ message: 'token updated' });
+        })
+      });
+
+      // let httpRequest = new XMLHttpRequest();
+      // httpRequest.onreadystatechange = () => {
+      //   if (httpRequest.readyState === 4) {
+      //     if (httpRequest.status === 200) {
+      //       console.log(httpRequest.responseText);
+      //       content;
+      //     }
+      //   }
+      // }
+      //
+      // httpRequest.open('POST', 'https://fcm.googleapis.com/fcm/send', true);
+      // httpRequest.setRequestHeader('Authorization', 'key=AAAAHH3bJ-s:APA91bFzAT0EM_lRaFHUormHbOtev3PhKXhfuWgwAC3gMzaNGNeWellLyYsyc7ReSIqqlI_3IVzJnyMDioUablZD7tgXgiG-999aG8ahsk-iMM4MJyT3gXdyEhoXWpqvWRfN-BSQYGoW');
+      // httpRequest.setRequestHeader('Content-Type', 'application/json');
+      // httpRequest.send(JSON.stringify({
+      //   to: content,
+      //   data: {
+      //     title: "test title",
+      //     message: "test message"
+      //   }
+      // }));
     });
   })
 
@@ -257,6 +321,43 @@ module.exports = function(app, io)
       });
     });
   });
+
+  app.post('/send_notification/:videoName', function(req, res) {
+    console.log('send notification arrived!');
+    var content = '';
+
+    req.on('data', function(data) {
+      content += data;
+    });
+
+    req.on('end', function() {
+      var feedback = JSON.parse(content).feedback;
+      UserInfo.findOne({ userId: feedback.userId }, function(err, userInfo) {
+        let httpRequest = new XMLHttpRequest();
+        httpRequest.onreadystatechange = () => {
+          if (httpRequest.readyState === 4) {
+            if (httpRequest.status === 200) {
+              console.log(httpRequest.responseText);
+              res.json({ success: true });
+            }
+          }
+        }
+        httpRequest.open('POST', 'https://fcm.googleapis.com/fcm/send', true);
+        httpRequest.setRequestHeader('Authorization', 'key=AAAAHH3bJ-s:APA91bFzAT0EM_lRaFHUormHbOtev3PhKXhfuWgwAC3gMzaNGNeWellLyYsyc7ReSIqqlI_3IVzJnyMDioUablZD7tgXgiG-999aG8ahsk-iMM4MJyT3gXdyEhoXWpqvWRfN-BSQYGoW');
+        httpRequest.setRequestHeader('Content-Type', 'application/json');
+        httpRequest.send(JSON.stringify({
+          to: userInfo.userToken,
+          data: {
+            title: "AIFI",
+            message: "Please tell more about your feedback!",
+            userId: userInfo.userId,
+            videoName: req.params.videoName,
+            startTime: feedback.startTime
+          }
+        }));
+      });
+    });
+  })
 
   app.get('/get_emoji_feedback/:videoName', function(req, res) {
     console.log('emoji feedback request!');
@@ -480,16 +581,6 @@ function isSame(feedback1, feedback2) {
 }
 
 function readRangeHeader(range, totalLength) {
-        /*
-         * Example of the method 'split' with regular expression.
-         *
-         * Input: bytes=100-200
-         * Output: [null, 100, 200, null]
-         *
-         * Input: bytes=-200
-         * Output: [null, null, 200, null]
-         */
-
     if (range == null || range.length == 0)
         return null;
 

@@ -12,6 +12,7 @@
       <div>
         <video id="presentation_video" width="800" height="450" controls>
           <source src="../videos/<%= videoName %>" type="video/mp4">
+          <!-- <source src="../download_video/<%= videoName %>" type="video/mp4"> -->
         </video>
         <hr>
         <canvas id="feedbackChart" width="600" height="100"></canvas>
@@ -76,7 +77,7 @@
               }
             }
             // newPromptRequest.open('POST', 'http://emma.kaist.ac.kr:3000/new_prompt/<%= videoName %>', true);
-            promptListRequest.open('GET', 'http://143.248.197.65:3000/get_prompt/<%= videoName %>', true);
+            promptListRequest.open('GET', 'http://192.168.0.149:3000/get_prompt/<%= videoName %>', true);
             promptListRequest.send(null);
           }
 
@@ -107,9 +108,9 @@
               <li id="custom_question_tab" role="presentation" class="active" style="-webkit-flex: 1; flex: 1;">
                 <a href="#custom_question_form" aria-controls="custom_question_form" role="tab" data-toggle="pill" style="text-align: center;">Custom question</a>
               </li>
-              <li id="ab_testing_tab" role="presentation" style="-webkit-flex: 1; flex: 1;">
+              <!-- <li id="ab_testing_tab" role="presentation" style="-webkit-flex: 1; flex: 1;">
                 <a href="#ab_testing_form" aria-controls="ab_testing_form" role="tab" data-toggle="pill" style="text-align: center;">A-B testing</a>
-              </li>
+              </li> -->
             </ul>
             <div class="tab-content">
               <div role="tabpanel" class="tab-pane active" id="custom_question_form" style="margin-top: 20px">
@@ -136,6 +137,24 @@
           <div class="modal-footer">
             <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
             <button type="button" id="new_prompt_submit_btn" class="btn btn-primary" data-dismiss="modal">Submit</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal fade" id="new_notification_modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" style="text-align: center">Send notification for detail</h4>
+          </div>
+          <div class="modal-body" style="text-align: center">
+            <p>Are you sure to send notification to the feedback provider for:</p>
+            <p id="target_feedback"></p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            <button type="button" id="new_notification_submit_btn" class="btn btn-primary" data-dismiss="modal">Submit</button>
           </div>
         </div>
       </div>
@@ -170,7 +189,7 @@
           }
         }
         // newPromptRequest.open('POST', 'http://emma.kaist.ac.kr:3000/new_prompt/<%= videoName %>', true);
-        newPromptRequest.open('POST', 'http://143.248.197.65:3000/new_prompt/<%= videoName %>', true);
+        newPromptRequest.open('POST', 'http://192.168.0.149:3000/new_prompt/<%= videoName %>', true);
         newPromptRequest.send(JSON.stringify(postData));
       });
     </script>
@@ -191,7 +210,7 @@
         }
       }
       // httpRequest.open('GET', 'http://emma.kaist.ac.kr:3000/get_feedback/<%= videoName %>', true);
-      httpRequest.open('GET', 'http://143.248.197.65:3000/get_feedback/<%= videoName %>', true);
+      httpRequest.open('GET', 'http://192.168.0.149:3000/get_feedback/<%= videoName %>', true);
       httpRequest.send(null);
 
       function appendFeedbackList(feedbackList) {
@@ -202,9 +221,10 @@
           let startTimeText = '' + parseInt(startTime/60000) + ':' + parseInt((startTime%60000)/1000);
           feedbackListElement.innerHTML += `<div class="panel panel-default" style="margin-bottom: 0">
             <div class="panel-body" role="tab">
-              <h4 id="feedback_${ i }" class="panel-title">
-                ${ startTimeText + ' - ' + feedbackList[i].feedback }
+              <h4 class="panel-title">
+                <span id="feedback_${ i }" style="cursor: pointer">${ startTimeText + ' - ' + feedbackList[i].feedback }</span>
                 <a style="float: right" data-toggle="collapse" href="#thread_feedback_${ i }" aria-expanded="true" aria-controls=""><i class="fa fa-angle-down" aria-hidden="true"></i></a>
+                <a id="question_for_feedback_${ i }" style="float: right; margin-right: 10px; cursor: pointer" data-toggle="modal" data-target="#new_notification_modal"><i class="fa fa-question-circle"></i></a>
               </h4>
             </div>
             <div id="thread_feedback_${ i }" class="panel-collapse collapse" role="tabpanel">
@@ -212,14 +232,6 @@
               </div>
             </div>
           </div>`
-
-          // console.log($('#feedback_' + i));
-
-          // $('#feedback_' + i).click(function(e) {
-          //   console.log('feedback clicked: ' + i);
-          //   videoElement.currentTime = startTime/1000;
-          // });
-
           if (feedbackList[i].thread.length !== 0) {
             let threadFeedbackBodyElement = document.getElementById('thread_feedback_body_' + i);
             for (let j = 0; j < feedbackList[i].thread.length; j++) {
@@ -232,40 +244,25 @@
               threadFeedbackBodyElement.appendChild(threadFeedbackElement);
             }
           }
-
-
-
-
-
-          // let feedbackListItemElement = document.createElement('div');
-          // let feedbackElement = document.createElement('span');
-          // let threadElement = document.createElement('div');
-          // let feedbackStr = startTimeText + ' - ' + feedbackList[i].feedback;
-          // console.log(feedbackList[i].like);
-          // if (feedbackList[i].like.length !== 0)
-          //   feedbackStr += ' (+' + feedbackList[i].like.length + ')';
-          // feedbackElement.innerHTML = feedbackStr;
-          // feedbackListItemElement.addEventListener('click', () => {
-          //   videoElement.currentTime = startTime/1000;
-          // });
-          // feedbackListItemElement.appendChild(feedbackElement);
-          //
-          // if (feedbackList[i].thread.length !== 0) {
-          //   for (let j = 0; j < feedbackList[i].thread.length; j++) {
-          //     let threadFeedbackElement = document.createElement('span');
-          //     let threadFeedbackStr = feedbackList[i].thread[j].feedback;
-          //     if (feedbackList[i].thread[j].like.length !== 0)
-          //       threadFeedbackStr += ' (+' + feedbackList[i].thread[j].like.length + ')';
-          //     threadFeedbackStr += '<br>';
-          //     threadFeedbackElement.innerHTML = threadFeedbackStr;
-          //     threadElement.appendChild(threadFeedbackElement);
-          //   }
-          //
-          //   threadElement.style.marginLeft = "30px";
-          //   feedbackListItemElement.appendChild(threadElement);
-          // }
-          //
-          // feedbackListElement.appendChild(feedbackListItemElement);
+          $('#question_for_feedback_' + i).click((e) => {
+            $('#target_feedback').html(feedbackList[i].feedback);
+            $('#new_notification_submit_btn').off();
+            $('#new_notification_submit_btn').click((e) => {
+              e.preventDefault();
+              let notificationRequest = new XMLHttpRequest();
+              notificationRequest.onreadystatechange = () => {
+                if (notificationRequest.readyState === 4) {
+                  if (notificationRequest.status === 200) {
+                    console.log('new notification request succeed!');
+                  }
+                }
+              }
+              notificationRequest.open('POST', 'http://192.168.0.149:3000/send_notification/<%= videoName %>', true);
+              notificationRequest.send(JSON.stringify({
+                feedback: feedbackList[i]
+              }));
+            });
+          });
         }
 
         for (let i = 0; i < feedbackList.length; i++) {
@@ -377,12 +374,7 @@
           if (elements.length !== 0) {
             let chartElement = elements[0];
             let timeToGo = timeInterval * chartElement._index;
-            // videoElement.removeEventListener('timeupdate', onTimeUpdateListener);
             videoElement.currentTime = timeToGo / 1000;
-            // appendFeedbackList(getFeedbackForSection(chartElement._index));
-            // timeIntervalElement.innerHTML = 'Around ' + Math.floor(timeToGo / 60000) + ':' + Math.floor((timeToGo % 60000) / 1000);
-            // videoElement.addEventListener('timeupdate', onTimeUpdateListener);
-
             function onTimeUpdateListener(e) {
               const currTimeToGo = timeToGo + 0;
               if (videoElement.currentTime * 1000 > currTimeToGo + timeInterval / 2
