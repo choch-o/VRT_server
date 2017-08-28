@@ -135,7 +135,7 @@ module.exports = function(app, io)
   })
 
   app.get('/apk', function(req, res) {
-    var file = __dirname + '/../static/HYFBABP.apk';
+    var file = __dirname + '/../static/prototype.apk';
     var filename = path.basename(file);
     var mimetype = mime.lookup(file);
 
