@@ -208,7 +208,7 @@ module.exports = function(app, io)
         })
       });
 
-      // let httpRequest = new XMLHttpRequest();
+      // var httpRequest = new XMLHttpRequest();
       // httpRequest.onreadystatechange = () => {
       //   if (httpRequest.readyState === 4) {
       //     if (httpRequest.status === 200) {
@@ -332,7 +332,7 @@ module.exports = function(app, io)
     req.on('end', function() {
       var feedback = JSON.parse(content).feedback;
       UserInfo.findOne({ userId: feedback.userId }, function(err, userInfo) {
-        let httpRequest = new XMLHttpRequest();
+        var httpRequest = new XMLHttpRequest();
         httpRequest.onreadystatechange = () => {
           if (httpRequest.readyState === 4) {
             if (httpRequest.status === 200) {
