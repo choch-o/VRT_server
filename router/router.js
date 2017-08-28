@@ -107,7 +107,6 @@ module.exports = function(app, io)
       responseHeaders['Content-Length'] = stat.size;
       responseHeaders['Accept-Ranges'] = 'bytes';
 
-      // res.setHeader('Content-disposition', 'attachment; filename=' + filename);
       res.setHeader('Content-Type', mimetype);
       res.setHeader('Content-Length', stat.size);
       res.setHeader('Accept-Ranges', 'bytes');
@@ -130,12 +129,12 @@ module.exports = function(app, io)
         res.setHeader('Cache-Control', 'no-cache');
 
         res.status(206);
-        filestream.pipe(res);
+        fs.createReadStream(file, { start: start, end: end }).pipe(res);
       }
     }
   })
 
-  app.get('/prototype_apk', function(req, res) {
+  app.get('/apk', function(req, res) {
     var file = __dirname + '/../static/HYFBABP.apk';
     var filename = path.basename(file);
     var mimetype = mime.lookup(file);

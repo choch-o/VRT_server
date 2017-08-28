@@ -76,8 +76,8 @@
                 }
               }
             }
-            // newPromptRequest.open('POST', 'http://emma.kaist.ac.kr:3000/new_prompt/<%= videoName %>', true);
-            promptListRequest.open('GET', 'http://192.168.0.149:3000/get_prompt/<%= videoName %>', true);
+            newPromptRequest.open('POST', 'http://emma.kaist.ac.kr:3000/new_prompt/<%= videoName %>', true);
+            // promptListRequest.open('GET', 'http://143.248.197.143:3000/get_prompt/<%= videoName %>', true);
             promptListRequest.send(null);
           }
 
@@ -188,8 +188,8 @@
             }
           }
         }
-        // newPromptRequest.open('POST', 'http://emma.kaist.ac.kr:3000/new_prompt/<%= videoName %>', true);
-        newPromptRequest.open('POST', 'http://192.168.0.149:3000/new_prompt/<%= videoName %>', true);
+        newPromptRequest.open('POST', 'http://emma.kaist.ac.kr:3000/new_prompt/<%= videoName %>', true);
+        // newPromptRequest.open('POST', 'http://143.248.197.143:3000/new_prompt/<%= videoName %>', true);
         newPromptRequest.send(JSON.stringify(postData));
       });
     </script>
@@ -209,8 +209,8 @@
           }
         }
       }
-      // httpRequest.open('GET', 'http://emma.kaist.ac.kr:3000/get_feedback/<%= videoName %>', true);
-      httpRequest.open('GET', 'http://192.168.0.149:3000/get_feedback/<%= videoName %>', true);
+      httpRequest.open('GET', 'http://emma.kaist.ac.kr:3000/get_feedback/<%= videoName %>', true);
+      // httpRequest.open('GET', 'http://143.248.197.143:3000/get_feedback/<%= videoName %>', true);
       httpRequest.send(null);
 
       function appendFeedbackList(feedbackList) {
@@ -257,7 +257,7 @@
                   }
                 }
               }
-              notificationRequest.open('POST', 'http://192.168.0.149:3000/send_notification/<%= videoName %>', true);
+              notificationRequest.open('POST', 'http://emma.kaist.ac.kr:3000/send_notification/<%= videoName %>', true);
               notificationRequest.send(JSON.stringify({
                 feedback: feedbackList[i]
               }));
