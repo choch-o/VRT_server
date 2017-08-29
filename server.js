@@ -17,7 +17,7 @@ db.once('open', function() {
 })
 
 mongoose.connect('mongodb://emma.kaist.ac.kr/reaction_tagging')
-// mongoose.connect('mongodb://143.248.197.143/reaction_tagging')
+// mongoose.connect('mongodb://143.248.78.115/reaction_tagging')
 
 app.use(upload())
 app.use(bodyParser.urlencoded({

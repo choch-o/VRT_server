@@ -7,6 +7,10 @@
     <script src="https://use.fontawesome.com/718410bc64.js"></script>
   </head>
   <body>
+    <script>
+      // let server_url = '143.248.78.115:3000';
+      let server_url = 'emma.kaist.ac.kr:3000';
+    </script>
     <h1 style="text-align: center"><%= videoName %></h1>
     <div style="display: -webkit-flex; display: flex;">
       <div>
@@ -76,8 +80,7 @@
                 }
               }
             }
-            newPromptRequest.open('POST', 'http://emma.kaist.ac.kr:3000/new_prompt/<%= videoName %>', true);
-            // promptListRequest.open('GET', 'http://143.248.197.143:3000/get_prompt/<%= videoName %>', true);
+            promptListRequest.open('GET', 'http://' + server_url + '/get_prompt/<%= videoName %>', true);
             promptListRequest.send(null);
           }
 
@@ -188,8 +191,7 @@
             }
           }
         }
-        newPromptRequest.open('POST', 'http://emma.kaist.ac.kr:3000/new_prompt/<%= videoName %>', true);
-        // newPromptRequest.open('POST', 'http://143.248.197.143:3000/new_prompt/<%= videoName %>', true);
+        newPromptRequest.open('POST', 'http://' + server_url + '/new_prompt/<%= videoName %>', true);
         newPromptRequest.send(JSON.stringify(postData));
       });
     </script>
@@ -209,8 +211,7 @@
           }
         }
       }
-      httpRequest.open('GET', 'http://emma.kaist.ac.kr:3000/get_feedback/<%= videoName %>', true);
-      // httpRequest.open('GET', 'http://143.248.197.143:3000/get_feedback/<%= videoName %>', true);
+      httpRequest.open('GET', 'http://' + server_url + '/get_feedback/<%= videoName %>', true);
       httpRequest.send(null);
 
       function appendFeedbackList(feedbackList) {
@@ -257,7 +258,7 @@
                   }
                 }
               }
-              notificationRequest.open('POST', 'http://emma.kaist.ac.kr:3000/send_notification/<%= videoName %>', true);
+              notificationRequest.open('POST', 'http://' + server_url + '/send_notification/<%= videoName %>', true);
               notificationRequest.send(JSON.stringify({
                 feedback: feedbackList[i]
               }));
@@ -289,7 +290,7 @@
         let dataData = [];
         let timeCnt = 0;
         let videoLength = Math.round(videoElement.duration*1000);
-        let intervalNum = Math.round(videoLength / 10000)
+        let intervalNum = Math.round(videoLength / 30000);
         let timeInterval = Math.round(videoLength / intervalNum);
         console.log(videoLength);
         console.log(timeInterval);

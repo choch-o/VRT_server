@@ -1,4 +1,6 @@
 const $document = $( document );
+const server_url = 'emma.kaist.ac.kr:3000';
+// const server_url = '143.248.78.115:3000';
 $document.ready(() => {
   updatePresentationList();
 
@@ -17,7 +19,7 @@ $document.ready(() => {
         }
       }
     };
-    httpRequest.open('POST', "http://emma.kaist.ac.kr:3000/", true);
+    httpRequest.open('POST', 'http://' + server_url + '/', true);
     fd.append(presentationFile.name, presentationFile);
     httpRequest.send(fd);
   });
@@ -38,15 +40,13 @@ function updatePresentationList() {
           let videoItemLinkElement = document.createElement('a');
           videoItemLinkElement.innerHTML = videoList[i].replace('static/videos/', '');
           videoItemLinkElement.classList.add('list-group-item')
-          videoItemLinkElement.href = 'http://emma.kaist.ac.kr:3000/feedback/' + videoItemLinkElement.innerHTML;
-          // videoItemLinkElement.href = 'http://143.248.197.143:3000/feedback/' + videoItemLinkElement.innerHTML;
+          videoItemLinkElement.href = 'http://' + server_url + '/feedback/' + videoItemLinkElement.innerHTML;
           videoItemElement.appendChild(videoItemLinkElement);
           videoListElement.appendChild(videoItemElement);
         }
       }
     }
   }
-  httpRequest.open('GET', 'http://emma.kaist.ac.kr:3000/videos', true);
-  // httpRequest.open('GET', 'http://143.248.197.143:3000/videos', true);
+  httpRequest.open('GET', 'http://' + server_url + '/videos', true);
   httpRequest.send(null);
 }
