@@ -416,7 +416,7 @@ module.exports = function(app, io)
   });
 
   app.post('/try_login', function(req, res) {
-    console.log('new user request!');
+    console.log('try login request!');
     var content = '';
 
     req.on('data', function(data) {
@@ -567,6 +567,27 @@ module.exports = function(app, io)
   app.get('/feedback/:videoName', function(req, res) {
     res.render('feedback', { videoName: req.params.videoName });
   });
+
+  app.post('/log', function(req, res) {
+    console.log('new log request!');
+    var content = '';
+
+    req.on('data', function(data) {
+      content += data;
+    });
+
+    req.on('end', function() {
+      var data = JSON.parse(content);
+      console.log(data);
+      let str = '\n' + data.userId + ',' + data.date.replace(',', '') + ',' + data.videoName + ',' + data.videoTime + ',' + data.latitude + ',' + data.longitude
+      fs.appendFile(__dirname + '/../log.csv', str, function (err) {
+        if (err) {
+          console.log(err);
+          res.json({ success: false });
+        } else res.json({ success: true });
+      });
+    });
+  })
 }
 
 function isSame(feedback1, feedback2) {
