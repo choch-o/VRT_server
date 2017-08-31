@@ -1,6 +1,6 @@
 const $document = $( document );
-const server_url = 'emma.kaist.ac.kr:3000';
-// const server_url = '143.248.197.134:3000';
+// const server_url = 'emma.kaist.ac.kr:3000';
+const server_url = '143.248.197.87:3000';
 $document.ready(() => {
   updatePresentationList();
 

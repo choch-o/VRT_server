@@ -8,8 +8,8 @@
   </head>
   <body>
     <script>
-      // let server_url = '143.248.197.134:3000';
-      let server_url = 'emma.kaist.ac.kr:3000';
+      let server_url = '143.248.197.87:3000';
+      // let server_url = 'emma.kaist.ac.kr:3000';
     </script>
     <h1 style="text-align: center"><%= videoName %></h1>
     <div style="display: -webkit-flex; display: flex;">
@@ -245,6 +245,13 @@
               threadFeedbackBodyElement.appendChild(threadFeedbackElement);
             }
           }
+        }
+
+        for (let i = 0; i < feedbackList.length; i++) {
+          $('#feedback_' + i).click((e) => {
+            videoElement.currentTime = feedbackList[i].startTime/1000;
+          });
+
           $('#question_for_feedback_' + i).click((e) => {
             $('#target_feedback').html(feedbackList[i].feedback);
             $('#new_notification_submit_btn').off();
@@ -263,12 +270,6 @@
                 feedback: feedbackList[i]
               }));
             });
-          });
-        }
-
-        for (let i = 0; i < feedbackList.length; i++) {
-          $('#feedback_' + i).click((e) => {
-            videoElement.currentTime = feedbackList[i].startTime/1000;
           });
         }
       }

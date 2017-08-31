@@ -16,8 +16,8 @@ db.once('open', function() {
   console.log('connected to mongod server')
 })
 
-mongoose.connect('mongodb://emma.kaist.ac.kr/reaction_tagging')
-// mongoose.connect('mongodb://143.248.197.134/reaction_tagging')
+// mongoose.connect('mongodb://emma.kaist.ac.kr/reaction_tagging')
+mongoose.connect('mongodb://localhost/reaction_tagging')
 
 app.use(upload())
 app.use(bodyParser.urlencoded({
