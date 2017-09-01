@@ -259,9 +259,11 @@
       }
     </script>
     <script type="text/javascript">
+      /* initialize question tab */
       let questionListElement = document.getElementById('question_list');
       updateQuestionList();
 
+      /* get question list from server and refresh question tab */
       function updateQuestionList() {
         while (questionListElement.hasChildNodes())
           questionListElement.removeChild(questionListElement.childNodes[0]);
@@ -294,6 +296,7 @@
                 </div>
               </div>`
 
+              /* add question answer list */
               let questionDetailBodyElement = document.getElementById('question_detail_body_' + i);
               for (let j = 0; j < questionList[j].answers.length; j++) {
                 let questionAnswerElement = document.createElement('p');
