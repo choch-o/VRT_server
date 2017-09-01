@@ -186,10 +186,6 @@ module.exports = function(app, io)
     });
   })
 
-
-
-
-
   app.post('/token_refreshed/:userId', function(req, res) {
     console.log('token refreshed arrived!');
     var content = '';
@@ -207,27 +203,6 @@ module.exports = function(app, io)
           res.json({ message: 'token updated' });
         })
       });
-
-      // var httpRequest = new XMLHttpRequest();
-      // httpRequest.onreadystatechange = () => {
-      //   if (httpRequest.readyState === 4) {
-      //     if (httpRequest.status === 200) {
-      //       console.log(httpRequest.responseText);
-      //       content;
-      //     }
-      //   }
-      // }
-      //
-      // httpRequest.open('POST', 'https://fcm.googleapis.com/fcm/send', true);
-      // httpRequest.setRequestHeader('Authorization', 'key=AAAAHH3bJ-s:APA91bFzAT0EM_lRaFHUormHbOtev3PhKXhfuWgwAC3gMzaNGNeWellLyYsyc7ReSIqqlI_3IVzJnyMDioUablZD7tgXgiG-999aG8ahsk-iMM4MJyT3gXdyEhoXWpqvWRfN-BSQYGoW');
-      // httpRequest.setRequestHeader('Content-Type', 'application/json');
-      // httpRequest.send(JSON.stringify({
-      //   to: content,
-      //   data: {
-      //     title: "test title",
-      //     message: "test message"
-      //   }
-      // }));
     });
   })
 
@@ -330,33 +305,53 @@ module.exports = function(app, io)
     });
 
     req.on('end', function() {
-      var feedback = JSON.parse(content).feedback;
-      UserInfo.findOne({ userId: feedback.userId }, function(err, userInfo) {
-        var httpRequest = new XMLHttpRequest();
-        httpRequest.onreadystatechange = () => {
-          if (httpRequest.readyState === 4) {
-            if (httpRequest.status === 200) {
-              console.log(httpRequest.responseText);
-              res.json({ success: true });
-            }
+      var data = JSON.parse(content);
+      console.log(data);
+      VideoInfo.findOne({ name: req.params.videoName }, function(err, videoInfo) {
+        if (!data.isComment) {
+          videoInfo.question.push({
+            userId: data.feedback.userId,
+            startTime: data.feedback.startTime,
+            feedback: data.feedback.feedback,
+            isComment: false,
+            question: data.question,
+            answers: []
+          });
+        } else {}
+        videoInfo.save(function(err) {
+          if (err) {
+            console.log(err);
+            res.status(500).json({ success: false });
+          } else {
+            UserInfo.findOne({ userId: data.feedback.userId }, function(err, userInfo) {
+              var httpRequest = new XMLHttpRequest();
+              httpRequest.onreadystatechange = () => {
+                if (httpRequest.readyState === 4) {
+                  if (httpRequest.status === 200) {
+                    console.log(httpRequest.responseText);
+                    res.json({ success: true });
+                  }
+                }
+              }
+              httpRequest.open('POST', 'https://fcm.googleapis.com/fcm/send', true);
+              httpRequest.setRequestHeader('Authorization', 'key=AAAAHH3bJ-s:APA91bFzAT0EM_lRaFHUormHbOtev3PhKXhfuWgwAC3gMzaNGNeWellLyYsyc7ReSIqqlI_3IVzJnyMDioUablZD7tgXgiG-999aG8ahsk-iMM4MJyT3gXdyEhoXWpqvWRfN-BSQYGoW');
+              httpRequest.setRequestHeader('Content-Type', 'application/json');
+              httpRequest.send(JSON.stringify({
+                to: userInfo.userToken,
+                data: {
+                  title: "AIFI",
+                  message: "Please tell more about your feedback!",
+                  userId: userInfo.userId,
+                  videoName: req.params.videoName,
+                  startTime: data.feedback.startTime
+                }
+              }));
+            });
           }
-        }
-        httpRequest.open('POST', 'https://fcm.googleapis.com/fcm/send', true);
-        httpRequest.setRequestHeader('Authorization', 'key=AAAAHH3bJ-s:APA91bFzAT0EM_lRaFHUormHbOtev3PhKXhfuWgwAC3gMzaNGNeWellLyYsyc7ReSIqqlI_3IVzJnyMDioUablZD7tgXgiG-999aG8ahsk-iMM4MJyT3gXdyEhoXWpqvWRfN-BSQYGoW');
-        httpRequest.setRequestHeader('Content-Type', 'application/json');
-        httpRequest.send(JSON.stringify({
-          to: userInfo.userToken,
-          data: {
-            title: "AIFI",
-            message: "Please tell more about your feedback!",
-            userId: userInfo.userId,
-            videoName: req.params.videoName,
-            startTime: feedback.startTime
-          }
-        }));
+        })
       });
     });
-  })
+  });
 
   app.get('/get_emoji_feedback/:videoName', function(req, res) {
     console.log('emoji feedback request!');
@@ -369,8 +364,14 @@ module.exports = function(app, io)
   app.get('/get_feedback/:videoName', function(req, res) {
     console.log('feedback request!');
     VideoInfo.findOne({ name: req.params.videoName }, function(err, videoInfo) {
-      var feedback = videoInfo.feedback;
-      res.json({ feedback : feedback });
+      res.json({ feedback: videoInfo.feedback });
+    });
+  });
+
+  app.get('/get_question/:videoName', function(req, res) {
+    console.log('question request!');
+    VideoInfo.findOne({ name: req.params.videoName }, function(err, videoInfo) {
+      res.json({ question: videoInfo.question });
     });
   });
 

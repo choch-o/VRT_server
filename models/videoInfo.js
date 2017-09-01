@@ -58,6 +58,20 @@ var videoInfoSchema = new Schema({
         }
       ]
     }
+  ],
+  question: [
+    {
+      userId: String,
+      startTime: Number,
+      feedback: String,
+      isComment: Boolean,
+      question: String,
+      answers: [
+        {
+          answer: String
+        }
+      ]
+    }
   ]
 });
 

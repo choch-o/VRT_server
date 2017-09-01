@@ -15,3 +15,5 @@ function sendHttpRequest(method, url, headers, data, callback) {
 
   httpRequest.send(data);
 }
+
+module.exports = sendHttpRequest;

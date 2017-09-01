@@ -18,11 +18,13 @@
         <canvas id="feedbackChart" width="600" height="100"></canvas>
       </div>
       <div style="height: 560px; margin-left: 20px; margin-right: 20px; -webkit-flex: 1; flex: 1; position: relative;">
-        <ul id="feedback_prompt_tab" class="nav nav-pills" style="display: -webkit-flex; display: flex;">
+        <ul id="feedback_prompt_question_tab" class="nav nav-pills" style="display: -webkit-flex; display: flex;">
           <li role="presentation" class="active" style="-webkit-flex: 1; flex: 1;">
             <a href="#feedback_list" aria-controls="feedback_list" role="tab" data-toggle="pill" style="text-align: center">Feedback</a></li>
           <li role="presentation" style="-webkit-flex: 1; flex: 1;">
             <a href="#prompt_list" aria-controls="prompt_list" role="tab" data-toggle="pill" style="text-align: center">Prompt</a></li>
+          <li role="presentation" style="-webkit-flex: 1; flex: 1;">
+            <a href="#question_list" aria-controls="question_list" role="tab" data-toggle="pill" style="text-align: center">Question</a></li>
         </ul>
         <div class="tab-content" style="width: 100%; height: 100%; position: absolute; border: 1px #337ab7 solid">
           <div role="tabpanel" class="tab-pane active" id="feedback_list">helo</div>
@@ -33,6 +35,7 @@
             <div id="prompt_list_body">
             </div>
           </div>
+          <div role="tabpanel" class="tab-pane" id="question_list">helo</div>
         </div>
       </div>
     </div>
@@ -90,7 +93,7 @@
             <p id="target_feedback" style="display: inline-block"></p>
             <div class="input-group" style="">
               <span class="input-group-addon" id="question_addon">Q. </span>
-              <input type="text" class="form-control" aria-describedby="question_addon"></input>
+              <input type="text" id="new_question" class="form-control" aria-describedby="question_addon"></input>
             </div>
           </div>
           <div class="modal-footer">
@@ -101,73 +104,232 @@
       </div>
     </div>
     <script>
+      /* define server url */
       let server_url = '192.168.0.149:3000';
       // let server_url = 'emma.kaist.ac.kr:3000';
     </script>
     <script type="text/javascript">
-    updatePromptList();
+      /* initialize feedback tab */
+      let videoElement = document.getElementById('presentation_video');
+      let feedbackListElement = document.getElementById('feedback_list');
+      let timeIntervalElement = document.getElementById('time_interval');
+      let feedbackList = [];
+      sendHttpRequest('GET', 'http://' + server_url + '/get_feedback/<%= videoName %>', {}, null, (httpRequest) => {
+        console.log('http request succeed!');
+        feedbackList = JSON.parse(httpRequest.responseText).feedback;
+        feedbackList.sort(compareFeedback);
+        updateFeedbackList(feedbackList);
+      });
 
-    function updatePromptList() {
-      let promptListElement = document.getElementById('prompt_list_body');
-      while (promptListElement.hasChildNodes())
-        promptListElement.removeChild(promptListElement.childNodes[0]);
+      /* get list of feedback from server and update the feedback tab */
+      function updateFeedbackList(feedbackList) {
+        /* clear the feedback tab */
+        $( feedbackListElement ).empty();
 
-      sendHttpRequest(
-        'GET',
-        'http://' + server_url + '/get_prompt/<%= videoName %>',
-        {},
-        null,
-        (promptListRequest) => {
-          console.log('prompt list request succeed!');
+        for (let i = 0; i < feedbackList.length; i++) {
+          let startTime = feedbackList[i].startTime;
+          let startTimeText = '' + parseInt(startTime/60000) + ':' + parseInt((startTime%60000)/1000);
 
-          let promptList = JSON.parse(promptListRequest.responseText).prompt;
-          promptList.sort(comparePrompt);
-
-          for (let i = 0; i < promptList.length; i++) {
-            promptListElement.innerHTML += `<div class="panel panel-default" style="margin-bottom: 0">
-              <div class="panel-body" role="tab">
-                <h4 class="panel-title">
-                  ${ '' + parseInt(promptList[i].time/60000) + ':' + parseInt((promptList[i].time%60000)/1000) } - ${ promptList[i].question }
-                  <a style="float: right" data-toggle="collapse" href="#prompt_detail_${ i }" aria-expanded="true" aria-controls=""><i class="fa fa-angle-down" aria-hidden="true"></i></a>
-                </h4>
-              </div>
-              <div id="prompt_detail_${ i }" class="panel-collapse collapse" role="tabpanel">
-                <div id="prompt_detail_body_${ i }" class="panel-body">
-                  <p style="text-align: center">Answers</h5>
+          /* add a new feedback to feedbackListElement */
+          feedbackListElement.innerHTML += `<div class="panel panel-default" style="margin-bottom: 0">
+            <div class="panel-body" role="tab">
+              <h4 class="panel-title" style="vertical-align: center; display: -webkit-flex; display: flex">
+                <span id="feedback_${ i }" style="cursor: pointer; -webkit-flex: 1; flex: 1">
+                  By ${ feedbackList[i].userId }
+                  <br>
+                  ${ startTimeText + ' - ' + feedbackList[i].feedback }
+                </span>
+                <div>
+                  <span id="question_for_feedback_${ i }" style="cursor: pointer; margin-right: 5px" data-toggle="modal" data-target="#new_notification_modal"><i class="fa fa-question-circle"></i></span>
+                  <span style="cursor: pointer" data-toggle="collapse" href="#thread_feedback_${ i }" aria-expanded="true" aria-controls=""><i class="fa fa-angle-down" aria-hidden="true"></i></span>
                 </div>
+              </h4>
+            </div>
+            <div id="thread_feedback_${ i }" class="panel-collapse collapse" role="tabpanel">
+              <div id="thread_feedback_body_${ i }"class="panel-body">
               </div>
-            </div>`
+            </div>
+          </div>`
 
-            let promptDetailBodyElement = document.getElementById('prompt_detail_body_' + i);
-            for (let j = 0; j < promptList[j].answers.length; j++) {
-              let promptAnswerElement = document.createElement('p');
-              promptAnswerElement.style.marginBottom = 5;
-              promptAnswerElement.innerHTML = promptList[i].answers[j].answer;
-              promptDetailBodyElement.appendChild(promptAnswerElement);
+          /* if there are comments for the feedback, add it to #thread_feedback_body_(i) element */
+          if (feedbackList[i].thread.length !== 0) {
+            let threadFeedbackBodyElement = document.getElementById('thread_feedback_body_' + i);
+            for (let j = 0; j < feedbackList[i].thread.length; j++) {
+              let threadFeedbackElement = document.createElement('span');
+              let threadFeedbackStr = feedbackList[i].thread[j].feedback;
+              threadFeedbackStr += '<br>';
+              threadFeedbackElement.innerHTML = threadFeedbackStr;
+              threadFeedbackBodyElement.appendChild(threadFeedbackElement);
             }
           }
         }
-      );
-    }
 
-    function comparePrompt(prompt1, prompt2) {
-      if (prompt1.time < prompt2.time) return -1;
-      else if (prompt1.time > prompt2.time) return 1;
-      else return 0;
-    }
+        /* add onclicklistener for feedback text & '?' button */
+        for (let i = 0; i < feedbackList.length; i++) {
+          /* onclicklistener for feedback text */
+          $('#feedback_' + i).click((e) => {
+            videoElement.currentTime = feedbackList[i].startTime/1000;
+          });
+
+          /* onclicklistener for '?' button */
+          $('#question_for_feedback_' + i).click((e) => {
+            $('#target_feedback').html(feedbackList[i].feedback);
+            $('#new_notification_submit_btn').off();
+            $('#new_notification_submit_btn').click((e) => {
+              e.preventDefault();
+              sendHttpRequest('POST', 'http://' + server_url + '/send_notification/<%= videoName %>', {}, JSON.stringify({
+                  feedback: feedbackList[i],
+                  isComment: false,
+                  commentOrder: -1,
+                  question: $('#new_question').val()
+                }),
+                (httpRequest) => {
+                  console.log('new notification request succeed!');
+                }
+              );
+              $('#new_question').val('');
+            });
+          });
+        }
+      }
+
+      /* function used to sort feedback list by time order */
+      function compareFeedback(feedback1, feedback2) {
+        if (feedback1.startTime < feedback2.startTime) return -1;
+        else if (feedback1.startTime > feedback2.startTime) return 1;
+        else {
+          if (feedback1.endTime < feedback2.endTime) return -1;
+          else if (feedback1.endTime > feedback2.endTime) return -1;
+          else return 0;
+        }
+      }
     </script>
     <script type="text/javascript">
-      $('#feedback_prompt_tab a').click(function(e) {
+    /* initialize prompt tab */
+    /* also, define updatePromptList, which get list of prompt from the server and refresh the prompt tab */
+      updatePromptList();
+
+      function updatePromptList() {
+        let promptListElement = document.getElementById('prompt_list_body');
+        while (promptListElement.hasChildNodes())
+          promptListElement.removeChild(promptListElement.childNodes[0]);
+
+        sendHttpRequest(
+          'GET',
+          'http://' + server_url + '/get_prompt/<%= videoName %>',
+          {},
+          null,
+          (promptListRequest) => {
+            console.log('prompt list request succeed!');
+
+            let promptList = JSON.parse(promptListRequest.responseText).prompt;
+            promptList.sort(comparePrompt);
+
+            for (let i = 0; i < promptList.length; i++) {
+              promptListElement.innerHTML += `<div class="panel panel-default" style="margin-bottom: 0">
+                <div class="panel-body" role="tab">
+                  <h4 class="panel-title">
+                    ${ '' + parseInt(promptList[i].time/60000) + ':' + parseInt((promptList[i].time%60000)/1000) } - ${ promptList[i].question }
+                    <a style="float: right" data-toggle="collapse" href="#prompt_detail_${ i }" aria-expanded="true" aria-controls=""><i class="fa fa-angle-down" aria-hidden="true"></i></a>
+                  </h4>
+                </div>
+                <div id="prompt_detail_${ i }" class="panel-collapse collapse" role="tabpanel">
+                  <div id="prompt_detail_body_${ i }" class="panel-body">
+                    <p style="text-align: center">Answers</h5>
+                  </div>
+                </div>
+              </div>`
+
+              let promptDetailBodyElement = document.getElementById('prompt_detail_body_' + i);
+              for (let j = 0; j < promptList[j].answers.length; j++) {
+                let promptAnswerElement = document.createElement('p');
+                promptAnswerElement.style.marginBottom = 5;
+                promptAnswerElement.innerHTML = promptList[i].answers[j].answer;
+                promptDetailBodyElement.appendChild(promptAnswerElement);
+              }
+            }
+          }
+        );
+      }
+
+      function comparePrompt(prompt1, prompt2) {
+        if (prompt1.time < prompt2.time) return -1;
+        else if (prompt1.time > prompt2.time) return 1;
+        else return 0;
+      }
+    </script>
+    <script type="text/javascript">
+      let questionListElement = document.getElementById('question_list');
+      updateQuestionList();
+
+      function updateQuestionList() {
+        while (questionListElement.hasChildNodes())
+          questionListElement.removeChild(questionListElement.childNodes[0]);
+
+        sendHttpRequest(
+          'GET',
+          'http://' + server_url + '/get_question/<%= videoName %>',
+          {},
+          null,
+          (httpRequest) => {
+            console.log('question list request succeed!');
+            console.log(httpRequest.responseText);
+
+            let questionList = JSON.parse(httpRequest.responseText).question;
+            console.log(questionList);
+            questionList.sort(compareQuestion);
+
+            for (let i = 0; i < questionList.length; i++) {
+              questionListElement.innerHTML += `<div class="panel panel-default" style="margin-bottom: 0">
+                <div class="panel-body" role="tab">
+                  <h4 class="panel-title">
+                    ${ '' + parseInt(questionList[i].startTime/60000) + ':' + parseInt((questionList[i].startTime%60000)/1000) } - ${ questionList[i].question }
+                    <a style="float: right" data-toggle="collapse" href="#question_detail_${ i }" aria-expanded="true" aria-controls=""><i class="fa fa-angle-down" aria-hidden="true"></i></a>
+                  </h4>
+                </div>
+                <div id="question_detail_${ i }" class="panel-collapse collapse" role="tabpanel">
+                  <div id="question_detail_body_${ i }" class="panel-body">
+                    <p style="text-align: center">Answers</h5>
+                  </div>
+                </div>
+              </div>`
+
+              let questionDetailBodyElement = document.getElementById('question_detail_body_' + i);
+              for (let j = 0; j < questionList[j].answers.length; j++) {
+                let questionAnswerElement = document.createElement('p');
+                questionAnswerElement.style.marginBottom = 5;
+                questionAnswerElement.innerHTML = questionAnswerElement[i].answers[j].answer;
+                questionDetailBodyElement.appendChild(questionAnswerElement);
+              }
+            }
+          }
+        );
+      }
+
+      function compareQuestion(question1, question2) {
+        if (question1.time < question2.time) return -1;
+        else if (question1.time > question2.time) return 1;
+        else return 0;
+      }
+    </script>
+    <script type="text/javascript">
+      /* set onclicklistener for feedback-prompt tab */
+      $('#feedback_prompt_question_tab a').click(function(e) {
         e.preventDefault();
         $(this).tab('show');
       });
     </script>
     <script type="text/javascript">
+      /* set onclicklisteners of modal for adding new prompt */
+
+      /* prompt type tab */
       $('#new_prompt_type_tab a').click(function(e) {
         e.preventDefault();
         $(this).tab('show');
       });
 
+      /* submit button */
+      /* create a new prompt with the written text in #custom_question_prompt_question element */
       $('#new_prompt_submit_btn').click(function(e) {
         console.log('pressed');
         let promptType;
@@ -188,91 +350,8 @@
         );
       });
     </script>
-    <script type="text/javascript">
-      let videoElement = document.getElementById('presentation_video');
-      let feedbackListElement = document.getElementById('feedback_list');
-      let timeIntervalElement = document.getElementById('time_interval');
-      let feedbackList = [];
-      sendHttpRequest('GET', 'http://' + server_url + '/get_feedback/<%= videoName %>', {}, null, (httpRequest) => {
-        console.log('http request succeed!');
-        feedbackList = JSON.parse(httpRequest.responseText).feedback;
-        feedbackList.sort(compareFeedback);
-        appendFeedbackList(feedbackList);
-      });
-
-      function appendFeedbackList(feedbackList) {
-        $( feedbackListElement ).empty();
-
-        for (let i = 0; i < feedbackList.length; i++) {
-          let startTime = feedbackList[i].startTime;
-          let startTimeText = '' + parseInt(startTime/60000) + ':' + parseInt((startTime%60000)/1000);
-          feedbackListElement.innerHTML += `<div class="panel panel-default" style="margin-bottom: 0">
-            <div class="panel-body" role="tab">
-              <h4 class="panel-title" style="vertical-align: center; display: -webkit-flex; display: flex">
-                <span id="feedback_${ i }" style="cursor: pointer; -webkit-flex: 1; flex: 1">
-                  By ${ feedbackList[i].userId }
-                  <br>
-                  ${ startTimeText + ' - ' + feedbackList[i].feedback }
-                </span>
-                <div>
-                  <span id="question_for_feedback_${ i }" style="cursor: pointer; margin-right: 5px" data-toggle="modal" data-target="#new_notification_modal"><i class="fa fa-question-circle"></i></span>
-                  <span style="cursor: pointer" data-toggle="collapse" href="#thread_feedback_${ i }" aria-expanded="true" aria-controls=""><i class="fa fa-angle-down" aria-hidden="true"></i></span>
-                </div>
-              </h4>
-            </div>
-            <div id="thread_feedback_${ i }" class="panel-collapse collapse" role="tabpanel">
-              <div id="thread_feedback_body_${ i }"class="panel-body">
-              </div>
-            </div>
-          </div>`
-          if (feedbackList[i].thread.length !== 0) {
-            let threadFeedbackBodyElement = document.getElementById('thread_feedback_body_' + i);
-            for (let j = 0; j < feedbackList[i].thread.length; j++) {
-              let threadFeedbackElement = document.createElement('span');
-              let threadFeedbackStr = feedbackList[i].thread[j].feedback;
-              threadFeedbackStr += '<br>';
-              threadFeedbackElement.innerHTML = threadFeedbackStr;
-              threadFeedbackBodyElement.appendChild(threadFeedbackElement);
-            }
-          }
-        }
-
-        for (let i = 0; i < feedbackList.length; i++) {
-          $('#feedback_' + i).click((e) => {
-            videoElement.currentTime = feedbackList[i].startTime/1000;
-          });
-
-          $('#question_for_feedback_' + i).click((e) => {
-            $('#target_feedback').html(feedbackList[i].feedback);
-            $('#new_notification_submit_btn').off();
-            $('#new_notification_submit_btn').click((e) => {
-              e.preventDefault();
-              sendHttpRequest('POST', 'http://' + server_url + '/send_notification/<%= videoName %>', {}, JSON.stringify({
-                  feedback: feedbackList[i],
-                  isComment: false,
-                  commentOrder: -1,
-                  question: ""
-                }),
-                (httpRequest) => {
-                  console.log('new notification request succeed!');
-                }
-              );
-            });
-          });
-        }
-      }
-
-      function compareFeedback(feedback1, feedback2) {
-        if (feedback1.startTime < feedback2.startTime) return -1;
-        else if (feedback1.startTime > feedback2.startTime) return 1;
-        else {
-          if (feedback1.endTime < feedback2.endTime) return -1;
-          else if (feedback1.endTime > feedback2.endTime) return -1;
-          else return 0;
-        }
-      }
-    </script>
     <script>
+      /* rendering chart */
       videoElement.addEventListener('loadedmetadata', function() {
         let ctx = document.getElementById("feedbackChart");
         let dataLabels = [];
@@ -281,9 +360,8 @@
         let videoLength = Math.round(videoElement.duration*1000);
         let intervalNum = Math.round(videoLength / 30000);
         let timeInterval = Math.round(videoLength / intervalNum);
-        console.log(videoLength);
-        console.log(timeInterval);
 
+        /* counts # of feedback whose time interval overlaps with each point of chart */
         for (let i = 0; i <= intervalNum; i++) {
           let startTime = timeCnt - timeInterval/2;
           let endTime = timeCnt + timeInterval/2 < videoLength ? timeCnt + timeInterval/2 : videoLength;
@@ -298,9 +376,8 @@
           dataData.push(feedbackCnt);
           timeCnt += timeInterval;
         }
-        console.log(dataLabels);
-        console.log(dataData);
 
+        /* draw chart */
         let myChart = new Chart(ctx, {
           type: 'line',
           data: {
@@ -370,7 +447,7 @@
               if (videoElement.currentTime * 1000 > currTimeToGo + timeInterval / 2
                 || videoElement.currentTime * 1000 < currTimeToGo - timeInterval / 2) {
                 timeIntervalElement.innerHTML = 'All';
-                appendFeedbackList(feedbackList);
+                updateFeedbackList(feedbackList);
                 videoElement.removeEventListener('timeupdate', onTimeUpdateListener);
               }
             }
