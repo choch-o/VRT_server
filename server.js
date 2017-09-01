@@ -29,6 +29,7 @@ app.set('view engine', 'ejs')
 app.engine('html', require('ejs').renderFile)
 
 app.use('/videos', express.static(__dirname + '/static/videos'))
+app.use('/', express.static(__dirname));
 
 server.listen(port, function() {
 	console.log('http server listening on port ' + port)
