@@ -8,7 +8,7 @@
   </head>
   <body>
     <script>
-      let server_url = '143.248.197.87:3000';
+      let server_url = '143.248.206.167:3000';
       // let server_url = 'emma.kaist.ac.kr:3000';
     </script>
     <h1 style="text-align: center"><%= videoName %></h1>
@@ -222,10 +222,16 @@
           let startTimeText = '' + parseInt(startTime/60000) + ':' + parseInt((startTime%60000)/1000);
           feedbackListElement.innerHTML += `<div class="panel panel-default" style="margin-bottom: 0">
             <div class="panel-body" role="tab">
-              <h4 class="panel-title">
-                <span id="feedback_${ i }" style="cursor: pointer">${ startTimeText + ' - ' + feedbackList[i].feedback }</span>
-                <a style="float: right" data-toggle="collapse" href="#thread_feedback_${ i }" aria-expanded="true" aria-controls=""><i class="fa fa-angle-down" aria-hidden="true"></i></a>
-                <a id="question_for_feedback_${ i }" style="float: right; margin-right: 10px; cursor: pointer" data-toggle="modal" data-target="#new_notification_modal"><i class="fa fa-question-circle"></i></a>
+              <h4 class="panel-title" style="vertical-align: center; display: -webkit-flex; display: flex">
+                <span id="feedback_${ i }" style="cursor: pointer; -webkit-flex: 1; flex: 1">
+                  By ${ feedbackList[i].userId }
+                  <br>
+                  ${ startTimeText + ' - ' + feedbackList[i].feedback }
+                </span>
+                <div>
+                  <span id="question_for_feedback_${ i }" style="cursor: pointer; margin-right: 5px" data-toggle="modal" data-target="#new_notification_modal"><i class="fa fa-question-circle"></i></span>
+                  <span style="cursor: pointer" data-toggle="collapse" href="#thread_feedback_${ i }" aria-expanded="true" aria-controls=""><i class="fa fa-angle-down" aria-hidden="true"></i></span>
+                </div>
               </h4>
             </div>
             <div id="thread_feedback_${ i }" class="panel-collapse collapse" role="tabpanel">
@@ -238,8 +244,6 @@
             for (let j = 0; j < feedbackList[i].thread.length; j++) {
               let threadFeedbackElement = document.createElement('span');
               let threadFeedbackStr = feedbackList[i].thread[j].feedback;
-              // if (feedbackList[i].thread[j].like.length !== 0)
-              //   threadFeedbackStr += ' (+' + feedbackList[i].thread[j].like.length + ')';
               threadFeedbackStr += '<br>';
               threadFeedbackElement.innerHTML = threadFeedbackStr;
               threadFeedbackBodyElement.appendChild(threadFeedbackElement);
