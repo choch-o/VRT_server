@@ -565,6 +565,41 @@ module.exports = function(app, io)
     });
   });
 
+  app.post('/new_question_answer/:videoName', function(req, res) {
+    console.log('new question answer request!');
+    var content = '';
+
+    req.on('data', function(data) {
+      content += data;
+    });
+
+    req.on('end', function() {
+      var data = JSON.parse(content);
+      console.log(data);
+      VideoInfo.findOne({ name: req.params.videoName }, function(err, videoInfo) {
+        var questionList = videoInfo.question;
+        for (var i = 0; i < questionList.length; i++) {
+          if (isSameQuestion(questionList[i], data))
+            videoInfo.question[i].answers.push({
+              userId: data.userId,
+              feedback: data.answer
+            });
+        }
+        videoInfo.save(function(err) {
+          if (err) res.status(500).json({ success: false });
+          res.json({ success: true });
+          io.emit('question answer addition', {
+            userId: data.userId,
+            startTime: data.startTime,
+            feedback: data.feedback,
+            question: data.question,
+            answer: data.answer
+          })
+        });
+      });
+    });
+  });
+
   app.get('/feedback/:videoName', function(req, res) {
     res.render('feedback', { videoName: req.params.videoName });
   });
@@ -597,6 +632,15 @@ function isSame(feedback1, feedback2) {
     && feedback1.endTime === feedback2.endTime
     && feedback1.feedback === feedback2.feedback
     && JSON.stringify(feedback1.like) === JSON.stringify(feedback2.like))
+    return true;
+  return false;
+}
+
+function isSameQuestion(q1, q2) {
+  if (q1.userId === q2.userId
+    && q1.startTime === q2.startTime
+    && q1.feedback === q2.feedback
+    && q1.question === q2.question)
     return true;
   return false;
 }
