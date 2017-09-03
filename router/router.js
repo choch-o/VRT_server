@@ -615,7 +615,7 @@ module.exports = function(app, io)
     req.on('end', function() {
       var data = JSON.parse(content);
       console.log(data);
-      let str = '\n' + data.userId + ',' + data.date.replace(',', '') + ',' + data.videoName + ',' + data.videoTime + ',' + data.latitude + ',' + data.longitude
+      var str = '\n' + data.userId + ',' + data.date.replace(',', '') + ',' + data.videoName + ',' + data.videoTime + ',' + data.latitude + ',' + data.longitude
       fs.appendFile(__dirname + '/../log.csv', str, function (err) {
         if (err) {
           console.log(err);
