@@ -317,13 +317,25 @@ module.exports = function(app, io)
             question: data.question,
             answers: []
           });
-        } else {}
+        } else {
+          videoInfo.question.push({
+            userId: data.feedback.thread[data.commentIndex].userId,
+            startTime: data.feedback.startTime,
+            feedback: data.feedback.thread[data.commentIndex].feedback,
+            isComment: true,
+            question: data.question,
+            answers: []
+          });
+        }
         videoInfo.save(function(err) {
           if (err) {
             console.log(err);
             res.status(500).json({ success: false });
           } else {
-            UserInfo.findOne({ userId: data.feedback.userId }, function(err, userInfo) {
+            var userId;
+            if (!data.isComment) userId = data.feedback.userId;
+            else userId = data.feedback.thread[data.commentIndex].userId;
+            UserInfo.findOne({ userId: userId }, function(err, userInfo) {
               var httpRequest = new XMLHttpRequest();
               httpRequest.onreadystatechange = () => {
                 if (httpRequest.readyState === 4) {

@@ -155,10 +155,14 @@
           if (feedbackList[i].thread.length !== 0) {
             let threadFeedbackBodyElement = document.getElementById('thread_feedback_body_' + i);
             for (let j = 0; j < feedbackList[i].thread.length; j++) {
-              let threadFeedbackElement = document.createElement('span');
-              let threadFeedbackStr = feedbackList[i].thread[j].feedback;
-              threadFeedbackStr += '<br>';
-              threadFeedbackElement.innerHTML = threadFeedbackStr;
+              let threadFeedbackElement = document.createElement('div');
+              let threadFeedbackTextElement = document.createElement('span');
+              threadFeedbackTextElement.innerHTML = feedbackList[i].thread[j].feedback;
+              threadFeedbackElement.innerHTML = '<hr style="margin-top: 8px; margin-bottom: 8px">'
+              threadFeedbackElement.appendChild(threadFeedbackTextElement);
+              threadFeedbackElement.innerHTML += `<span id="question_for_feedback_${ i }_comment_${ j }" style="cursor: pointer; float: right" data-toggle="modal" data-target="#new_notification_modal"><i class="fa fa-question-circle"></i></span>`
+              threadFeedbackElement.style.paddingLeft="20px";
+              threadFeedbackElement.style.paddingRight="20px";
               threadFeedbackBodyElement.appendChild(threadFeedbackElement);
             }
           }
@@ -180,7 +184,7 @@
               sendHttpRequest('POST', 'http://' + server_url + '/send_notification/<%= videoName %>', {}, JSON.stringify({
                   feedback: feedbackList[i],
                   isComment: false,
-                  commentOrder: -1,
+                  commentIndex: -1,
                   question: $('#new_question').val()
                 }),
                 (httpRequest) => {
@@ -191,6 +195,27 @@
               $('#new_question').val('');
             });
           });
+          for (let j = 0; j < feedbackList[i].thread.length; j++) {
+            $('#question_for_feedback_' + i + '_comment_' + j).click((e) => {
+              $('#target_feedback').html(feedbackList[i].thread[j].feedback);
+              $('#new_notification_submit_btn').off();
+              $('#new_notification_submit_btn').click((e) => {
+                e.preventDefault();
+                sendHttpRequest('POST', 'http://' + server_url + '/send_notification/<%= videoName %>', {}, JSON.stringify({
+                    feedback: feedbackList[i],
+                    isComment: true,
+                    commentIndex: j,
+                    question: $('#new_question').val()
+                  }),
+                  (httpRequest) => {
+                    console.log('new notification request succeed!');
+                    updateQuestionList();
+                  }
+                );
+                $('#new_question').val('');
+              });
+            });
+          }
         }
       }
 
