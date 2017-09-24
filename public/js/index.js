@@ -26,10 +26,16 @@ $document.ready(() => {
 });
 
 function updatePresentationList() {
+  var database = firebase.database();
+  database.ref('videos').on('value', (snapshot) => {
+    console.log(snapshot.val());
+  });
   let videoListElement = document.getElementById('video_list');
   while (videoListElement.hasChildNodes())
-    videoListElement.removeChild(videoListElement.childNodes[0])
+    videoListElement.removeChild(videoListElement.childNodes[0]);
 
+
+  /*
   let httpRequest = new XMLHttpRequest();
   httpRequest.onreadystatechange = () => {
     if (httpRequest.readyState === 4) {
@@ -49,4 +55,5 @@ function updatePresentationList() {
   }
   httpRequest.open('GET', 'http://' + server_url + '/videos', true);
   httpRequest.send(null);
+  */
 }
