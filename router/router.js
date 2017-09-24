@@ -186,10 +186,6 @@ module.exports = function(app, io)
     });
   })
 
-
-
-
-
   app.post('/token_refreshed/:userId', function(req, res) {
     console.log('token refreshed arrived!');
     var content = '';
@@ -207,27 +203,6 @@ module.exports = function(app, io)
           res.json({ message: 'token updated' });
         })
       });
-
-      // var httpRequest = new XMLHttpRequest();
-      // httpRequest.onreadystatechange = () => {
-      //   if (httpRequest.readyState === 4) {
-      //     if (httpRequest.status === 200) {
-      //       console.log(httpRequest.responseText);
-      //       content;
-      //     }
-      //   }
-      // }
-      //
-      // httpRequest.open('POST', 'https://fcm.googleapis.com/fcm/send', true);
-      // httpRequest.setRequestHeader('Authorization', 'key=AAAAHH3bJ-s:APA91bFzAT0EM_lRaFHUormHbOtev3PhKXhfuWgwAC3gMzaNGNeWellLyYsyc7ReSIqqlI_3IVzJnyMDioUablZD7tgXgiG-999aG8ahsk-iMM4MJyT3gXdyEhoXWpqvWRfN-BSQYGoW');
-      // httpRequest.setRequestHeader('Content-Type', 'application/json');
-      // httpRequest.send(JSON.stringify({
-      //   to: content,
-      //   data: {
-      //     title: "test title",
-      //     message: "test message"
-      //   }
-      // }));
     });
   })
 
@@ -330,33 +305,65 @@ module.exports = function(app, io)
     });
 
     req.on('end', function() {
-      var feedback = JSON.parse(content).feedback;
-      UserInfo.findOne({ userId: feedback.userId }, function(err, userInfo) {
-        var httpRequest = new XMLHttpRequest();
-        httpRequest.onreadystatechange = () => {
-          if (httpRequest.readyState === 4) {
-            if (httpRequest.status === 200) {
-              console.log(httpRequest.responseText);
-              res.json({ success: true });
-            }
-          }
+      var data = JSON.parse(content);
+      console.log(data);
+      VideoInfo.findOne({ name: req.params.videoName }, function(err, videoInfo) {
+        if (!data.isComment) {
+          videoInfo.question.push({
+            userId: data.feedback.userId,
+            startTime: data.feedback.startTime,
+            feedback: data.feedback.feedback,
+            isComment: false,
+            question: data.question,
+            answers: []
+          });
+        } else {
+          videoInfo.question.push({
+            userId: data.feedback.thread[data.commentIndex].userId,
+            startTime: data.feedback.startTime,
+            feedback: data.feedback.thread[data.commentIndex].feedback,
+            isComment: true,
+            question: data.question,
+            answers: []
+          });
         }
-        httpRequest.open('POST', 'https://fcm.googleapis.com/fcm/send', true);
-        httpRequest.setRequestHeader('Authorization', 'key=AAAAHH3bJ-s:APA91bFzAT0EM_lRaFHUormHbOtev3PhKXhfuWgwAC3gMzaNGNeWellLyYsyc7ReSIqqlI_3IVzJnyMDioUablZD7tgXgiG-999aG8ahsk-iMM4MJyT3gXdyEhoXWpqvWRfN-BSQYGoW');
-        httpRequest.setRequestHeader('Content-Type', 'application/json');
-        httpRequest.send(JSON.stringify({
-          to: userInfo.userToken,
-          data: {
-            title: "AIFI",
-            message: "Please tell more about your feedback!",
-            userId: userInfo.userId,
-            videoName: req.params.videoName,
-            startTime: feedback.startTime
+        videoInfo.save(function(err) {
+          if (err) {
+            console.log(err);
+            res.status(500).json({ success: false });
+          } else {
+            var userId;
+            if (!data.isComment) userId = data.feedback.userId;
+            else userId = data.feedback.thread[data.commentIndex].userId;
+            UserInfo.findOne({ userId: userId }, function(err, userInfo) {
+              var httpRequest = new XMLHttpRequest();
+              httpRequest.onreadystatechange = () => {
+                if (httpRequest.readyState === 4) {
+                  if (httpRequest.status === 200) {
+                    console.log(httpRequest.responseText);
+                    res.json({ success: true });
+                  }
+                }
+              }
+              httpRequest.open('POST', 'https://fcm.googleapis.com/fcm/send', true);
+              httpRequest.setRequestHeader('Authorization', 'key=AAAAHH3bJ-s:APA91bFzAT0EM_lRaFHUormHbOtev3PhKXhfuWgwAC3gMzaNGNeWellLyYsyc7ReSIqqlI_3IVzJnyMDioUablZD7tgXgiG-999aG8ahsk-iMM4MJyT3gXdyEhoXWpqvWRfN-BSQYGoW');
+              httpRequest.setRequestHeader('Content-Type', 'application/json');
+              httpRequest.send(JSON.stringify({
+                to: userInfo.userToken,
+                data: {
+                  title: "AIFI",
+                  message: "Please tell more about your feedback!",
+                  userId: userInfo.userId,
+                  videoName: req.params.videoName,
+                  startTime: data.feedback.startTime
+                }
+              }));
+            });
           }
-        }));
+        })
       });
     });
-  })
+  });
 
   app.get('/get_emoji_feedback/:videoName', function(req, res) {
     console.log('emoji feedback request!');
@@ -369,8 +376,14 @@ module.exports = function(app, io)
   app.get('/get_feedback/:videoName', function(req, res) {
     console.log('feedback request!');
     VideoInfo.findOne({ name: req.params.videoName }, function(err, videoInfo) {
-      var feedback = videoInfo.feedback;
-      res.json({ feedback : feedback });
+      res.json({ feedback: videoInfo.feedback });
+    });
+  });
+
+  app.get('/get_question/:videoName', function(req, res) {
+    console.log('question request!');
+    VideoInfo.findOne({ name: req.params.videoName }, function(err, videoInfo) {
+      res.json({ question: videoInfo.question });
     });
   });
 
@@ -416,7 +429,7 @@ module.exports = function(app, io)
   });
 
   app.post('/try_login', function(req, res) {
-    console.log('new user request!');
+    console.log('try login request!');
     var content = '';
 
     req.on('data', function(data) {
@@ -564,9 +577,65 @@ module.exports = function(app, io)
     });
   });
 
+  app.post('/new_question_answer/:videoName', function(req, res) {
+    console.log('new question answer request!');
+    var content = '';
+
+    req.on('data', function(data) {
+      content += data;
+    });
+
+    req.on('end', function() {
+      var data = JSON.parse(content);
+      console.log(data);
+      VideoInfo.findOne({ name: req.params.videoName }, function(err, videoInfo) {
+        var questionList = videoInfo.question;
+        for (var i = 0; i < questionList.length; i++) {
+          if (isSameQuestion(questionList[i], data))
+            videoInfo.question[i].answers.push({
+              userId: data.userId,
+              feedback: data.answer
+            });
+        }
+        videoInfo.save(function(err) {
+          if (err) res.status(500).json({ success: false });
+          res.json({ success: true });
+          io.emit('question answer addition', {
+            userId: data.userId,
+            startTime: data.startTime,
+            feedback: data.feedback,
+            question: data.question,
+            answer: data.answer
+          })
+        });
+      });
+    });
+  });
+
   app.get('/feedback/:videoName', function(req, res) {
     res.render('feedback', { videoName: req.params.videoName });
   });
+
+  app.post('/log', function(req, res) {
+    console.log('new log request!');
+    var content = '';
+
+    req.on('data', function(data) {
+      content += data;
+    });
+
+    req.on('end', function() {
+      var data = JSON.parse(content);
+      console.log(data);
+      var str = '\n' + data.userId + ',' + data.date.replace(',', '') + ',' + data.videoName + ',' + data.videoTime + ',' + data.latitude + ',' + data.longitude
+      fs.appendFile(__dirname + '/../log.csv', str, function (err) {
+        if (err) {
+          console.log(err);
+          res.json({ success: false });
+        } else res.json({ success: true });
+      });
+    });
+  })
 }
 
 function isSame(feedback1, feedback2) {
@@ -575,6 +644,15 @@ function isSame(feedback1, feedback2) {
     && feedback1.endTime === feedback2.endTime
     && feedback1.feedback === feedback2.feedback
     && JSON.stringify(feedback1.like) === JSON.stringify(feedback2.like))
+    return true;
+  return false;
+}
+
+function isSameQuestion(q1, q2) {
+  if (q1.userId === q2.userId
+    && q1.startTime === q2.startTime
+    && q1.feedback === q2.feedback
+    && q1.question === q2.question)
     return true;
   return false;
 }

@@ -16,8 +16,8 @@ db.once('open', function() {
   console.log('connected to mongod server')
 });
 
-mongoose.connect('mongodb://emma.kaist.ac.kr/reaction_tagging')
-// mongoose.connect('mongodb://143.248.78.115/reaction_tagging')
+// mongoose.connect('mongodb://emma.kaist.ac.kr/reaction_tagging')
+mongoose.connect('mongodb://localhost/reaction_tagging')
 
 app.use(upload());
 app.use(bodyParser.urlencoded({
@@ -29,7 +29,8 @@ app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
 app.engine('html', require('ejs').renderFile);
 
-app.use('/videos', express.static(__dirname + '/static/videos'));
+app.use('/videos', express.static(__dirname + '/static/videos'))
+app.use('/', express.static(__dirname));
 
 server.listen(port, function() {
 	console.log('http server listening on port ' + port)
